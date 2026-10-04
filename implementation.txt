@@ -35,7 +35,7 @@ flowchart TD
     end
 
     subgraph External["External Services & Storage"]
-        LLM["OpenAI / Gemini API (Structured JSON Mode)"]
+        LLM["Gemini API (Structured JSON Mode)"]
         DB[(PostgreSQL + Prisma ORM)]
     end
 
@@ -65,7 +65,7 @@ flowchart TD
 | **Backend Framework** | Node.js + Express + TypeScript | Layered clean architecture (`routes -> controllers -> services -> repositories`). |
 | **Validation Layer** | Zod (shared types/schemas) | End-to-end type inference and strict runtime request/response validation. |
 | **ORM & Database** | Prisma ORM + PostgreSQL | Relational integrity, structured JSON fields for findings, and migration tracking. |
-| **AI Integration** | OpenAI SDK | Structured output with JSON schema enforcement. |
+| **AI Integration** | Google GenAI SDK | Gemini structured output with JSON schema enforcement. |
 | **Testing** | Vitest (Frontend/Backend) + Supertest | Blazing fast unit and integration tests with mocked AI providers. |
 
 ---
@@ -392,7 +392,7 @@ If time becomes constrained, the complete single-listing workflow takes priority
 ### Phase 3: Policy Retrieval & AI Review Service
 * [ ] Seed marketplace policy dataset (prohibited goods, medical claims, authenticity rules, formatting).
 * [ ] Build policy retriever service with category filtering and keyword term scoring.
-* [ ] Integrate OpenAI with strict JSON Schema output.
+* [ ] Integrate Gemini with strict JSON Schema output.
 * [ ] Implement backend citation verification filter to reject ungrounded policy citations.
 * [ ] Implement transient failure handling, timeout handling, and retry mechanics.
 

@@ -1,0 +1,162 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum ListingStatus {
+  PENDING
+  VALIDATION_FAILED
+  REVIEWING
+  NEEDS_CHANGES
+  APPROVED
+  FAILED
+}
+
+enum ReviewStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  FINALIZED
+}
+
+enum FindingSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum FindingSource {
+  DETERMINISTIC
+  AI
+}
+
+enum DecisionAction {
+  APPROVE
+  EDIT
+  REJECT
+}
+
+model Batch {
+  id         String    @id @default(cuid())
+  totalCount Int
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  listings   Listing[]
+}
+
+model Listing {
+  id            String        @id @default(cuid())
+  batchId       String?
+  batch         Batch?        @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  title         String
+  description   String
+  category      String
+  price         Decimal       @db.Decimal(10, 2)
+  attributes    Json
+  seller        String
+  tags          String[]
+  normalizedKey String
+  status        ListingStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  reviews       Review[]
+  revisions     RevisedListing[]
+  auditLogs     AuditLog[]
+
+  @@index([normalizedKey])
+  @@index([status])
+}
+
+model Review {
+  id                   String       @id @default(cuid())
+  listingId            String
+  listing              Listing      @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  status               ReviewStatus @default(PENDING)
+  deterministicPassed  Boolean
+  deterministicErrors  Json?
+  retrievedPolicyCodes String[]
+  aiRawResponse        Json?
+  errorMessage         String?
+  retryCount           Int          @default(0)
+  createdAt            DateTime     @default(now())
+  completedAt          DateTime?
+  findings             Finding[]
+  decisions            Decision[]
+
+  @@index([listingId])
+}
+
+model Finding {
+  id                 String          @id @default(cuid())
+  reviewId           String
+  review             Review          @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  field              String
+  issueType          String
+  severity           FindingSeverity
+  explanation        String
+  supportingEvidence String?
+  policyCode         String
+  suggestedWording   String?
+  source             FindingSource
+  createdAt          DateTime        @default(now())
+  decisions          Decision[]
+}
+
+model Decision {
+  id             String         @id @default(cuid())
+  reviewId       String
+  review         Review         @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  findingId      String
+  finding        Finding        @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  action         DecisionAction
+  appliedWording String?
+  operatorNotes  String?
+  decidedAt      DateTime       @default(now())
+
+  @@index([findingId])
+}
+
+model RevisedListing {
+  id          String   @id @default(cuid())
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  category    String
+  price       Decimal  @db.Decimal(10, 2)
+  attributes  Json
+  seller      String
+  tags        String[]
+  finalizedAt DateTime @default(now())
+
+  @@index([listingId])
+}
+
+model PolicySection {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  category  String
+  title     String
+  content   String
+  keywords  String[]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  action    String
+  metadata  Json?
+  timestamp DateTime @default(now())
+
+  @@index([listingId])
+  @@index([action])
+}

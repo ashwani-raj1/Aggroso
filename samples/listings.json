@@ -1,0 +1,22 @@
+{
+  "listings": [
+    {
+      "title": "Wireless noise-cancelling headphones",
+      "description": "Over-ear wireless headphones with carrying case and charging cable. Tested and fully working.",
+      "category": "ELECTRONICS",
+      "price": "129.99",
+      "attributes": { "condition": "Used", "color": "Black" },
+      "seller": "North Audio",
+      "tags": ["wireless", "audio"]
+    },
+    {
+      "title": "100% guaranteed back pain cure cushion",
+      "description": "A therapy cushion claimed to cure chronic back pain immediately for every customer.",
+      "category": "HEALTH_WELLNESS",
+      "price": "49.00",
+      "attributes": { "material": "Memory foam" },
+      "seller": "Wellness Store",
+      "tags": ["therapy", "pain relief"]
+    }
+  ]
+}
