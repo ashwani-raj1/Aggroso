@@ -2,14 +2,25 @@ import { app } from "./app.js";
 import { config } from "./config.js";
 import { prisma } from "./db.js";
 
-const server = app.listen(config.PORT, () => {
-  console.log(`Marketplace reviewer API listening on http://localhost:${config.PORT}`);
-});
+let server: ReturnType<typeof app.listen> | undefined;
+
+async function start() {
+  await prisma.$executeRawUnsafe('ALTER TABLE "Listing" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT');
+  await prisma.$executeRawUnsafe('ALTER TABLE "RevisedListing" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT');
+  server = app.listen(config.PORT, () => {
+    console.log(`Marketplace reviewer API listening on http://localhost:${config.PORT}`);
+  });
+}
 
 async function shutdown() {
-  server.close();
+  server?.close();
   await prisma.$disconnect();
 }
+
+start().catch((error) => {
+  console.error("Backend startup failed", error);
+  process.exitCode = 1;
+});
 
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);

@@ -33,7 +33,10 @@ Listings first pass deterministic checks for required fields, supported categori
 ## Current scope
 
 - Single listing creation
-- JSON batches of up to 20 listings
+- Excel (`.xlsx`/`.xls`) batches of up to 20 listings
+- Optional listing image URL and image previews
+- Indian rupee price formatting
+- Live Pending, Evaluating, Needs Changes, Approved, and Failed status views
 - Deterministic validation
 - Policy retrieval and cited AI review
 - Field-level decisions and revised snapshots

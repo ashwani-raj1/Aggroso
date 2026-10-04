@@ -16,6 +16,7 @@ export const api = {
   listListings: () => request<Listing[]>("/listings"),
   getListing: (id: string) => request<ListingDetail>(`/listings/${id}`),
   createListing: (listing: ListingInput) => request<Listing>("/listings", { method: "POST", body: JSON.stringify(listing) }),
+  createBatch: (listings: ListingInput[]) => request<{ id: string; listings: Listing[] }>("/batches", { method: "POST", body: JSON.stringify({ listings }) }),
   reviewListing: (id: string) => request(`/listings/${id}/review`, { method: "POST" }),
   decideFinding: (reviewId: string, findingId: string, decision: { action: "APPROVE" | "EDIT" | "REJECT"; appliedWording?: string; operatorNotes?: string }) =>
     request(`/reviews/${reviewId}/findings/${findingId}/decisions`, { method: "POST", body: JSON.stringify(decision) }),

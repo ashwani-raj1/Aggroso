@@ -11,6 +11,7 @@ export const supportedCategories = [
 ] as const;
 
 const pricePattern = /^\d+(?:\.\d{1,2})?$/;
+const supportedImage = /^(https?:\/\/|data:image\/(?:jpeg|png|webp);base64,)/i;
 
 export const listingInputSchema = z.object({
   title: z.string().trim().min(10).max(150),
@@ -22,7 +23,8 @@ export const listingInputSchema = z.object({
   }, "Price must be between 0.01 and 999999.99"),
   attributes: z.record(z.string().trim()).default({}),
   seller: z.string().trim().min(1).max(120),
-  tags: z.array(z.string().trim().min(2).max(30)).max(10).default([])
+  tags: z.array(z.string().trim().min(2).max(30)).max(10).default([]),
+  imageUrl: z.string().trim().max(2_000_000, "Image is too large").refine((value) => supportedImage.test(value), "Use an HTTP image URL or a JPG, PNG, or WebP upload").optional()
 });
 
 export const batchInputSchema = z.object({

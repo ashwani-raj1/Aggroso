@@ -2,6 +2,7 @@ import { NavLink, Route, Routes } from "react-router-dom";
 import { Dashboard } from "./pages/Dashboard";
 import { NewListing } from "./pages/NewListing";
 import { ListingDetail } from "./pages/ListingDetail";
+import { BatchImport } from "./pages/BatchImport";
 
 export function App() {
   return (
@@ -11,6 +12,7 @@ export function App() {
         <nav>
           <NavLink to="/">Dashboard</NavLink>
           <NavLink to="/listings/new">New listing</NavLink>
+          <NavLink to="/import">Excel import</NavLink>
         </nav>
         <div className="sidebar-note"><strong>Human reviewed</strong><span>AI suggestions are never applied automatically.</span></div>
       </aside>
@@ -18,6 +20,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/listings/new" element={<NewListing />} />
+          <Route path="/import" element={<BatchImport />} />
           <Route path="/listings/:id" element={<ListingDetail />} />
         </Routes>
       </main>

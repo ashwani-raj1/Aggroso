@@ -9,6 +9,7 @@ export type Listing = {
   attributes: Record<string, string>;
   seller: string;
   tags: string[];
+  imageUrl?: string | null;
   status: ListingStatus;
   createdAt: string;
   reviews?: Array<{ id: string; status: string; createdAt: string }>;
