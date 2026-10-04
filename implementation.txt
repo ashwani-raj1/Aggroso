@@ -1,0 +1,464 @@
+# Implementation Plan: Marketplace Listing Quality Reviewer
+
+## 1. Executive Summary & System Overview
+
+The **Marketplace Listing Quality Reviewer** is a full-stack, human-in-the-loop content evaluation platform. It assists marketplace operators and sellers by screening product/service listings against strict marketplace policies and brand guidelines before publishing. 
+
+### Key Objectives
+* **Reliable Deterministic Pre-Screening:** Immediate detection of invalid schemas, negative prices, out-of-bounds text lengths, unsupported categories, and duplicates without invoking LLMs.
+* **Context-Aware Policy Retrieval:** Category matching and keyword relevance scoring to feed only pertinent policy rules into the AI prompt.
+* **AI-Assisted Quality Auditing:** Identification of misleading claims, prohibited items, unverified claims, and stylistic deficiencies with strict citation requirements.
+* **Human-in-the-Loop Workbench:** Complete operator control to approve, edit, or reject AI-suggested rewrites, creating audited revisions without destroying original inputs.
+* **Resilient Batch Processing & Full Auditability:** Fault-tolerant batch imports where a single failure does not block the remaining listings, backed by append-only PostgreSQL review-history records.
+
+---
+
+## 2. Architecture & Technology Stack
+
+```mermaid
+flowchart TD
+    subgraph Frontend["Frontend (React + Vite + TypeScript)"]
+        UI_Form["Listing Creation Form / JSON Batch Import"]
+        UI_Batch["Batch Status Dashboard"]
+        UI_Workbench["Field-by-Field Review Workbench"]
+        UI_Diff["Side-by-Side Diff & Comparison View"]
+        UI_Audit["Audit & History Log Viewer"]
+    end
+
+    subgraph Backend["Backend (Node.js + Express + TypeScript)"]
+        API_Gateway["Express Router & Validation Middleware (Zod)"]
+        DetEngine["Deterministic Validation & Duplicate Detector"]
+        PolicyEngine["Policy & Brand Guide Retrieval Service (Scoring Engine)"]
+        AIService["AI Review Service (Structured Outputs & Citation Verifier)"]
+        ReviewService["Review & Revision State Manager"]
+        AuditLogger["Structured Logger & Audit Service"]
+    end
+
+    subgraph External["External Services & Storage"]
+        LLM["OpenAI / Gemini API (Structured JSON Mode)"]
+        DB[(PostgreSQL + Prisma ORM)]
+    end
+
+    UI_Form -->|POST /api/listings| API_Gateway
+    UI_Batch -->|GET /api/batches/:id| API_Gateway
+    UI_Workbench -->|POST /api/reviews/:id/decisions| API_Gateway
+    UI_Diff -->|GET /api/listings/:id/comparison| API_Gateway
+
+    API_Gateway --> DetEngine
+    DetEngine --> DB
+    API_Gateway --> PolicyEngine
+    PolicyEngine --> AIService
+    AIService -->|Prompt + Retrieved Policies| LLM
+    LLM -->|Structured Findings JSON| AIService
+    AIService -->|Verify Citations & Schema| ReviewService
+    ReviewService --> DB
+    AuditLogger --> DB
+```
+
+### Technology Matrix
+
+| Layer | Technology | Rationale |
+| :--- | :--- | :--- |
+| **Frontend Framework** | React 18 + Vite + TypeScript | High performance, rapid HMR, type safety across components. |
+| **State & API Management** | TanStack Query (React Query) + React Router v6 | Declarative caching, mutation handling, optimistic updates, and clean route management. |
+| **Styling & UI** | CSS Modules / Modern Vanilla CSS Design Tokens | Clean, ultra-responsive, zero runtime overhead, customized dark/light theme tokens. |
+| **Backend Framework** | Node.js + Express + TypeScript | Layered clean architecture (`routes -> controllers -> services -> repositories`). |
+| **Validation Layer** | Zod (shared types/schemas) | End-to-end type inference and strict runtime request/response validation. |
+| **ORM & Database** | Prisma ORM + PostgreSQL | Relational integrity, structured JSON fields for findings, and migration tracking. |
+| **AI Integration** | OpenAI SDK | Structured output with JSON schema enforcement. |
+| **Testing** | Vitest (Frontend/Backend) + Supertest | Blazing fast unit and integration tests with mocked AI providers. |
+
+---
+
+## 3. Domain Model & Database Schema (Prisma)
+
+```prisma
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum ListingStatus {
+  PENDING
+  VALIDATION_FAILED
+  REVIEWING
+  NEEDS_CHANGES
+  APPROVED
+  REJECTED
+}
+
+enum FindingSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IssueType {
+  UNCLEAR
+  MISLEADING
+  PROHIBITED
+  INCOMPLETE
+  UNVERIFIABLE
+  STYLE_VIOLATION
+}
+
+enum DecisionAction {
+  APPROVE
+  EDIT
+  REJECT
+}
+
+enum ReviewStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  FINALIZED
+}
+
+model Batch {
+  id          String        @id @default(cuid())
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  totalCount  Int
+  listings    Listing[]
+}
+
+model Listing {
+  id              String        @id @default(cuid())
+  batchId         String?
+  batch           Batch?        @relation(fields: [batchId], references: [id], onDelete: SetNull)
+  title           String
+  description     String
+  category        String
+  price           Decimal       @db.Decimal(10, 2)
+  attributes      Json          // Key-value attributes
+  seller          String
+  tags            String[]
+  normalizedKey   String        // normalized(seller + category + title) for duplicate checks
+  status          ListingStatus @default(PENDING)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  reviews         Review[]
+  revisedListings RevisedListing[]
+  auditLogs       AuditLog[]
+
+  @@index([normalizedKey])
+  @@index([category])
+  @@index([status])
+}
+
+model PolicySection {
+  id          String   @id @default(cuid())
+  code        String   @unique // e.g., "POL-PROHIBITED-01", "STYLE-TITLE-02"
+  category    String   // specific category or "ALL"
+  title       String
+  content     String
+  keywords    String[]
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Review {
+  id                    String            @id @default(cuid())
+  listingId             String
+  listing               Listing           @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  status                ReviewStatus      @default(PENDING)
+  deterministicPassed   Boolean
+  deterministicErrors   Json?             // Array of deterministic validation failure messages
+  retrievedPolicyCodes  String[]          // Codes of policies injected into prompt
+  aiRawResponse         Json?             // Unmodified AI output
+  errorMessage          String?           // Stores review failure / error message
+  retryCount            Int               @default(0)
+  createdAt             DateTime          @default(now())
+
+  findings              Finding[]
+  decisions             Decision[]
+
+  @@index([listingId])
+}
+
+model Finding {
+  id                String          @id @default(cuid())
+  reviewId          String
+  review            Review          @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  field             String          // "title", "description", "price", "attributes.weight", etc.
+  issueType         IssueType
+  severity          FindingSeverity
+  explanation       String
+  supportingEvidence String
+  policyCode        String          // Must match a retrieved PolicySection code
+  suggestedWording  String?
+  createdAt         DateTime        @default(now())
+
+  decisions         Decision[]
+}
+
+model Decision {
+  id              String         @id @default(cuid())
+  reviewId        String
+  review          Review         @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  findingId       String
+  finding         Finding        @relation(fields: [findingId], references: [id], onDelete: Cascade)
+  action          DecisionAction
+  appliedWording  String?        // Original suggestion or operator-edited text
+  operatorNotes   String?
+  decidedAt       DateTime       @default(now())
+
+  @@index([findingId])
+}
+
+model RevisedListing {
+  id            String    @id @default(cuid())
+  listingId     String
+  listing       Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  title         String
+  description   String
+  category      String
+  price         Decimal   @db.Decimal(10, 2)
+  attributes    Json
+  seller        String
+  tags          String[]
+  finalizedAt   DateTime  @default(now())
+
+  @@index([listingId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  listingId   String?
+  listing     Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  action      String   // "LISTING_CREATED", "VALIDATION_FAILED", "AI_REVIEW_COMPLETED", "DECISION_APPLIED"
+  metadata    Json?
+  timestamp   DateTime @default(now())
+
+  @@index([listingId])
+  @@index([action])
+}
+```
+
+---
+
+## 4. Deterministic Validation & Policy Retrieval Engine
+
+### 4.1 Deterministic Validation Rules (Executed prior to LLM)
+1. **Required Fields:** `title`, `description`, `category`, `price`, `seller`.
+2. **Category Allowlist:** Limited and documented set:
+   * `ELECTRONICS`, `FASHION_APPAREL`, `HOME_KITCHEN`, `HEALTH_WELLNESS`, `COLLECTIBLES_ART`, `SERVICES`.
+3. **Price Validation:** Must be positive number, max precision 2 decimals ($0.01 to $999,999.99).
+4. **Length & Structure Boundaries:**
+   * Title: 10 to 150 characters.
+   * Description: 30 to 3,000 characters.
+   * Tags: Max 10 tags, each 2 to 30 characters.
+5. **Duplicate Detection:**
+   * `normalizedKey = sha256(trim(lower(seller)) + "::" + category + "::" + normalizeWhitespace(lower(title)))`
+   * Check both the submitted batch and existing database records. An exact normalized-key match is a blocking validation error; no AI request is made for that listing.
+
+### 4.2 Policy Retrieval & Scoring Engine
+Instead of dumping the entire rulebook into the context window, the system selects relevant rules:
+* **Step 1: Category Match:** Fetch all universal policies (`category = "ALL"`) plus policies matching the listing's specific category.
+* **Step 2: Keyword Scoring:**
+  * Tokenize listing title, description, and attributes into unique terms.
+  * Score each policy: $\text{Score} = (\text{CategoryMatchWeight} \times 3) + \sum (\text{KeywordOccurrences})$.
+* **Step 3: Top-K Context Selection:** Inject the top $N$ policy sections (e.g., top 5–8 relevant policies) into the LLM system prompt along with their exact `code`.
+
+---
+
+## 5. AI Review Pipeline & Citation Guardrails
+
+### 5.1 AI Structured Output Schema
+The AI is instructed to act strictly as an auditor and return JSON adhering to this schema:
+
+```json
+{
+  "summary": "High-level summary of review",
+  "overallCompliance": "NEEDS_CHANGES",
+  "findings": [
+    {
+      "field": "title",
+      "issueType": "UNVERIFIABLE",
+      "severity": "HIGH",
+      "explanation": "Claim of '100% Guaranteed Cure for Pain' is an unapproved medical claim.",
+      "supportingEvidence": "Listing title contains '100% Guaranteed Cure'",
+      "policyCode": "POL-HEALTH-01",
+      "suggestedWording": "Advanced Pain Relief Comfort Cushion"
+    }
+  ]
+}
+```
+
+### 5.2 Citation Guardrails & Anti-Hallucination Checks
+Before saving AI findings into PostgreSQL, the backend enforces:
+1. **Strict Code Verification:** Every `policyCode` returned by the LLM *must* exist within the `retrievedPolicyCodes` array sent in that specific prompt. If the model cites a non-existent or un-retrieved policy, the backend flags the citation as invalid or rejects the finding.
+2. **No Direct Mutation:** The AI output is treated purely as a proposal (`suggestedWording`). The original `Listing` is never mutated directly by the AI.
+3. **No Hallucinated Specifications:** If technical specs are missing, the AI may flag `INCOMPLETE` with severity `LOW`/`MEDIUM`, but is forbidden from inventing hypothetical specs.
+
+---
+
+## 6. Human-in-the-Loop Workbench & Review Lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: Listing Created / Imported
+    PENDING --> VALIDATION_FAILED: Deterministic Checks Fail
+    PENDING --> REVIEWING: Deterministic Checks Pass
+    
+    state REVIEWING {
+        [*] --> PolicyRetrieval
+        PolicyRetrieval --> LLM_Inference
+        LLM_Inference --> CitationVerification
+        CitationVerification --> [*]
+    }
+    
+    REVIEWING --> REVIEWING: Retry upon transient failure
+    REVIEWING --> NEEDS_CHANGES: Findings Detected
+    REVIEWING --> APPROVED: No Findings Detected
+    
+    state NEEDS_CHANGES {
+        InspectFindings --> ApproveSuggestion: Keep AI text
+        InspectFindings --> EditSuggestion: Customize text
+        InspectFindings --> RejectSuggestion: Dismiss issue
+    }
+    
+    NEEDS_CHANGES --> APPROVED: All critical/high issues resolved & finalized
+    APPROVED --> [*]: Ready to publish
+```
+
+### Interactive Operations
+1. **Approve As-Is:** Accepts `suggestedWording` directly.
+2. **Edit & Approve:** Allows the human reviewer to edit the suggestion in an inline editor before approving.
+3. **Reject Finding:** Operator dismisses the finding with an optional note (e.g., "Seller provided verified certificate").
+4. **Finalize Revision:** Generates a `RevisedListing` snapshot while keeping the original listing intact. The application does not expose update or delete operations for finalized snapshots.
+5. **Side-by-Side Diffing:** Visual highlighting (green for additions, red for deletions) of all field changes across Title, Description, Price, and Attributes.
+
+---
+
+## 7. API Design & Endpoint Specifications
+
+### Listings & Batches
+* `POST /api/listings` - Create a single listing (triggers deterministic check).
+* `POST /api/batches` - Import a batch of listings (max 20 per batch).
+* `GET /api/batches/:id` - Get batch processing summary and status counts.
+* `GET /api/listings` - List listings with status/category filters and pagination.
+* `GET /api/listings/:id` - Fetch listing details, review records, and revision history.
+
+### Review & Decision Engine
+* `POST /api/listings/:id/review` - Trigger or re-run the AI review workflow.
+* `GET /api/reviews/:id` - Get full review details, retrieved policy context, and findings.
+* `POST /api/reviews/:id/decisions` - Submit operator decisions (`APPROVE`, `EDIT`, `REJECT`) for findings.
+* `POST /api/reviews/:id/finalize` - Apply decisions and create the final `RevisedListing`.
+* `GET /api/listings/:id/comparison` - Get side-by-side original vs. revised data with diff metadata.
+
+### Policy & Diagnostics
+* `GET /api/policies` - Retrieve all policy rules and category guides.
+* `GET /api/health` - Service health, DB connectivity, and AI provider status.
+
+---
+
+## 8. Step-by-Step Phased Implementation Roadmap
+
+The implementation is intentionally scoped to a focused **4–7 hour prototype**:
+
+| Phase | Focus | Estimated Time |
+| :--- | :--- | :--- |
+| 1 | Project foundation, Prisma schema, and shared contracts | 45–60 minutes |
+| 2 | Listing ingestion and deterministic validation | 60–75 minutes |
+| 3 | Policy retrieval and structured OpenAI review | 60–90 minutes |
+| 4 | Human review workbench, decisions, and comparison | 75–90 minutes |
+| 5 | History, focused tests, documentation, and deployment | 60–90 minutes |
+
+If time becomes constrained, the complete single-listing workflow takes priority, followed by batch processing, additional visual polish, and optional test coverage.
+
+### Phase 1: Foundation & Core Infrastructure
+* [ ] Initialize repository structure with separate `frontend/` and `backend/` packages.
+* [ ] Configure TypeScript, ESLint, and base dev scripts.
+* [ ] Setup PostgreSQL connection and Prisma schema migrations.
+* [ ] Implement shared validation types with Zod for listings, reviews, and findings.
+* [ ] Setup Express backend with health check endpoint (`/api/health`) and standardized error handling middleware.
+
+### Phase 2: Ingestion & Deterministic Validation
+* [ ] Build frontend single listing creation form with field-level real-time validations.
+* [ ] Build JSON batch import modal/uploader with schema checks and max batch size enforcement (limit: 20).
+* [ ] Implement backend deterministic validation service (price rules, character limits, allowed categories).
+* [ ] Implement duplicate detection using SHA-256 normalized composite keys.
+* [ ] Persist listings and deterministic failure logs in PostgreSQL.
+
+### Phase 3: Policy Retrieval & AI Review Service
+* [ ] Seed marketplace policy dataset (prohibited goods, medical claims, authenticity rules, formatting).
+* [ ] Build policy retriever service with category filtering and keyword term scoring.
+* [ ] Integrate OpenAI with strict JSON Schema output.
+* [ ] Implement backend citation verification filter to reject ungrounded policy citations.
+* [ ] Implement transient failure handling, timeout handling, and retry mechanics.
+
+### Phase 4: Review Workbench & Human-in-the-Loop Workflow
+* [ ] Build Field-Grouped Findings Workbench in React.
+* [ ] Implement interactive decision controls: Approve, Inline Edit, Reject.
+* [ ] Build Side-by-Side Diff comparison screen highlighting changed fields.
+* [ ] Implement Finalize Revision mutation to produce immutable `RevisedListing`.
+* [ ] Build Batch Monitoring dashboard with real-time status badges and retry triggers.
+* [ ] Build complete audit history timeline component.
+
+### Phase 5: Automated Testing & Sample Datasets
+* [ ] Unit tests for deterministic validation rules (negative prices, invalid categories, length limits).
+* [ ] Unit tests for policy retrieval keyword scoring logic.
+* [ ] Unit tests for AI response parser and citation verification guardrails.
+* [ ] Integration tests for listing creation -> review -> decision -> revision lifecycle with mocked LLM.
+* [ ] Seed sample fixtures:
+  1. `valid_listing.json` (passes all checks)
+  2. `invalid_price.json` (negative price deterministic failure)
+  3. `unsupported_category.json` (category not in allowlist)
+  4. `duplicate_listing.json` (triggers duplicate detector)
+  5. `unverifiable_medical_claim.json` (triggers `POL-HEALTH-01` severity `CRITICAL`)
+  6. `unsupported_authenticity.json` (triggers `POL-BRAND-02` unverified luxury claim)
+
+### Phase 6: Documentation, Deployment & Final Polish
+* [ ] Craft `README.md` with architecture diagrams, setup instructions, test commands, and API docs.
+* [ ] Craft `AGENT_USAGE.md` documenting AI tooling workflows, prompt templates, and validation steps.
+* [ ] Provide `.env.example` with required configuration keys.
+* [ ] Deploy Frontend to Vercel and Backend to Render/Railway.
+* [ ] Connect hosted PostgreSQL (Supabase / Neon).
+* [ ] Perform end-to-end smoke verification on hosted environment.
+
+---
+
+## 9. Testing Strategy Matrix
+
+| Test Level | Scope | Mocking Strategy | Tool |
+| :--- | :--- | :--- | :--- |
+| **Unit** | Deterministic Validators | Pure functions, no mocks needed | Vitest |
+| **Unit** | Duplicate Key Generator | Pure hashing utility | Vitest |
+| **Unit** | Policy Scoring Algorithm | In-memory policy test fixtures | Vitest |
+| **Unit** | Citation Guardrail Service | Simulated LLM payloads (valid & invalid citations) | Vitest |
+| **Integration**| Listing Creation & Batch API | Supertest against in-memory/test PostgreSQL | Vitest + Supertest |
+| **Integration**| Review Workflow & Decisions | Mocked AI Client returning pre-set structured JSON | Vitest + Supertest |
+| **Frontend** | Workbench Decision State | Mock Service Worker (MSW) or React Testing Library | Vitest + RTL |
+| **E2E / Manual**| Deployed Hosted Verification | Live LLM API with sample test suites | Browser / Playwright |
+
+---
+
+## 10. Scope Boundaries & Non-Goals
+
+To maintain strict adherence to project scope and deliver an exceptional review experience:
+* **Excluded:** Real marketplace payment processing / Stripe integration.
+* **Excluded:** Real live marketplace publishing / external store webhooks.
+* **Excluded:** Image upload and computer vision moderation (text and structured attributes only).
+* **Excluded:** Complex multi-tenant seller authentication / OAuth (focus is on review workbench).
+* **Excluded:** Unbounded batch queue streaming (batch size is capped at 20 listings).
+
+---
+
+## 11. Verification & Acceptance Criteria
+
+The system is fully complete and ready when:
+1. **Deterministic Layer:** Invalid inputs and duplicates are caught instantly with clear field-level feedback without calling the AI API.
+2. **Context Precision:** The AI review only receives relevant policy rules and cannot cite rules outside the retrieved set.
+3. **No Unsupervised Mutations:** The AI cannot alter the database listing directly; all revisions require human approval/editing.
+4. **Audit Trail:** Original listings, AI findings, operator decisions, and revised listings are preserved through append-only history records and remain viewable. The application exposes no update or delete endpoints for audit events or finalized snapshots.
+5. **Resilient Batches:** Batch processing handles mixed valid/invalid listings gracefully without cascading failures.
+6. **Documentation & Tests:** All automated tests pass, and complete `README.md`, `AGENT_USAGE.md`, and `.env.example` files are present.
