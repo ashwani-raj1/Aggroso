@@ -9,8 +9,9 @@ import { sampleListings } from "../src/domain/sample-listings.js";
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL is required");
 const secureConnectionUrl = new URL(connectionString);
-if (!secureConnectionUrl.searchParams.has("sslmode")) secureConnectionUrl.searchParams.set("sslmode", "require");
 const certificatePath = process.env.DATABASE_CA_CERT_PATH;
+if (certificatePath) secureConnectionUrl.searchParams.delete("sslmode");
+else if (!secureConnectionUrl.searchParams.has("sslmode")) secureConnectionUrl.searchParams.set("sslmode", "require");
 
 const adapter = new PrismaPg({
   connectionString: secureConnectionUrl.toString(),
