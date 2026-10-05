@@ -1,11 +1,39 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChangeEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import * as XLSX from "xlsx";
 import { api } from "../api";
 import type { ListingInput } from "../types";
 
 type SheetRow = Record<string, unknown>;
+type XlsxApi = {
+  read(data: ArrayBuffer, options: { type: "array" }): { SheetNames: string[]; Sheets: Record<string, unknown> };
+  utils: {
+    sheet_to_json<T>(sheet: unknown, options: { defval: string }): T[];
+    json_to_sheet(rows: Record<string, unknown>[]): unknown;
+    book_new(): unknown;
+    book_append_sheet(workbook: unknown, sheet: unknown, name: string): void;
+  };
+  writeFile(workbook: unknown, fileName: string): void;
+};
+
+declare global {
+  interface Window { XLSX?: XlsxApi }
+}
+
+let xlsxPromise: Promise<XlsxApi> | undefined;
+function loadXlsx(): Promise<XlsxApi> {
+  if (window.XLSX) return Promise.resolve(window.XLSX);
+  if (xlsxPromise) return xlsxPromise;
+  xlsxPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js";
+    script.async = true;
+    script.onload = () => window.XLSX ? resolve(window.XLSX) : reject(new Error("Excel reader did not initialize."));
+    script.onerror = () => reject(new Error("Excel reader could not be loaded. Check your internet connection."));
+    document.head.appendChild(script);
+  });
+  return xlsxPromise;
+}
 
 const columns = ["title", "description", "category", "price", "seller", "tags", "imageUrl", "attributes"];
 
@@ -65,6 +93,7 @@ export function BatchImport() {
     setParseError("");
     setFileName(file.name);
     try {
+      const XLSX = await loadXlsx();
       const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       if (!sheet) throw new Error("The workbook does not contain a sheet.");
@@ -78,7 +107,9 @@ export function BatchImport() {
     }
   }
 
-  function downloadTemplate() {
+  async function downloadTemplate() {
+    setParseError("");
+    const XLSX = await loadXlsx();
     const sheet = XLSX.utils.json_to_sheet([{
       title: "Wireless headphones in good condition",
       description: "Over-ear wireless headphones with charging cable, tested and fully working.",
@@ -95,7 +126,7 @@ export function BatchImport() {
   }
 
   return <section>
-    <header className="page-header"><div><p className="eyebrow">Batch workspace</p><h1>Import listings from Excel</h1><p>Upload up to 20 listings and monitor each evaluation from the dashboard.</p></div><button className="button" onClick={downloadTemplate}>Download template</button></header>
+    <header className="page-header"><div><p className="eyebrow">Batch workspace</p><h1>Import listings from Excel</h1><p>Upload up to 20 listings and monitor each evaluation from the dashboard.</p></div><button className="button" onClick={() => void downloadTemplate().catch((error) => setParseError(error instanceof Error ? error.message : "Could not create the template."))}>Download template</button></header>
     <div className="panel upload-panel">
       <label className="drop-zone"><input type="file" accept=".xlsx,.xls" onChange={readWorkbook} /><span className="upload-icon">⇧</span><strong>{fileName || "Choose an Excel workbook"}</strong><small>Supported formats: XLSX and XLS · Maximum 20 rows</small></label>
       <div className="column-guide"><strong>Required columns</strong><div>{columns.map((column) => <code key={column}>{column}</code>)}</div></div>
