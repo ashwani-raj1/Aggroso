@@ -42,7 +42,10 @@ export function NewListing() {
   const queryClient = useQueryClient();
   const create = useMutation({
     mutationFn: api.createListing,
-    onSuccess: async (listing) => { await queryClient.invalidateQueries({ queryKey: ["listings"] }); navigate(`/listings/${listing.id}`); }
+    onSuccess: (listing) => {
+      queryClient.setQueryData(["listings"], (current: unknown) => Array.isArray(current) ? [listing, ...current] : [listing]);
+      navigate(`/listings/${listing.id}`);
+    }
   });
 
   function submit(event: FormEvent) {

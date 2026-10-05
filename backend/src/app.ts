@@ -76,12 +76,27 @@ app.get("/api/config", (_req, res) => {
 app.get("/api/policies", (_req, res) => res.json({ data: policies }));
 
 app.get("/api/listings", async (_req, res) => {
-  const listings = await prisma.listing.findMany({ orderBy: { createdAt: "desc" }, include: { reviews: { select: { id: true, status: true, createdAt: true } } } });
+  const listings = await prisma.listing.findMany({
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      category: true,
+      price: true,
+      attributes: true,
+      seller: true,
+      tags: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true
+    }
+  });
   res.json({ data: listings.map(withImageUrl) });
 });
 
 app.get("/api/listings/:id", async (req, res) => {
-  const listing = await prisma.listing.findUnique({ where: { id: req.params.id }, include: { reviews: { orderBy: { createdAt: "asc" }, include: { findings: { include: { decisions: { orderBy: { decidedAt: "asc" } } } }, decisions: true } }, revisions: { orderBy: { finalizedAt: "desc" } }, auditLogs: { orderBy: { timestamp: "desc" } } } });
+  const listing = await prisma.listing.findUnique({ relationLoadStrategy: "join", where: { id: req.params.id }, include: { reviews: { orderBy: { createdAt: "asc" }, include: { findings: { include: { decisions: { orderBy: { decidedAt: "asc" } } } }, decisions: true } }, revisions: { orderBy: { finalizedAt: "desc" } }, auditLogs: { orderBy: { timestamp: "desc" } } } });
   if (!listing) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Listing not found", requestId: res.locals.requestId } });
   res.json({ data: { ...withImageUrl(listing), revisions: listing.revisions.map(withImageUrl) } });
 });

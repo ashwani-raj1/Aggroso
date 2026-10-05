@@ -10,8 +10,11 @@ const ssl = config.DATABASE_CA_CERT_PATH
 const adapter = new PrismaPg({
   connectionString: config.DATABASE_URL,
   ssl,
-  max: 1,
-  idleTimeoutMillis: 20_000,
+  // Detail views load several related collections. A small pool lets Prisma
+  // fetch them concurrently instead of paying one network round-trip each.
+  max: 5,
+  keepAlive: true,
+  idleTimeoutMillis: 5 * 60_000,
   connectionTimeoutMillis: 30_000
 });
 

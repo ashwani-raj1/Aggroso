@@ -5,7 +5,16 @@ import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
 import "./styles.css";
 
-const queryClient = new QueryClient({ defaultOptions: { queries: { staleTime: 15_000, retry: 1 } } });
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      gcTime: 10 * 60_000,
+      retry: 1,
+      refetchOnWindowFocus: false
+    }
+  }
+});
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
