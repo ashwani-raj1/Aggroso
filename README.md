@@ -316,7 +316,7 @@ samples/listings.json     Import-ready sample data
 
 ## Local setup
 
-1. Copy `.env.example` to `backend/.env` and provide a Supabase PostgreSQL transaction-pooler connection string and Gemini API key.
+1. Copy `backend/.env.example` to `backend/.env` and provide a Supabase PostgreSQL transaction-pooler connection string and Gemini API key. Copy `frontend/.env.example` to `frontend/.env` only when the API is not at `http://localhost:4000/api`.
 2. Install dependencies with `npm install`.
 3. Generate the Prisma client with `npm run db:generate -w backend`.
 4. Open `backend/prisma/init.sql` in Supabase SQL Editor and run it once to create the schema.
@@ -385,6 +385,21 @@ The first worksheet uses these columns:
 - Field-level decisions and revised snapshots
 - Review and approval history
 
+## Submission requirement coverage
+
+| Requirement | Implementation and evidence |
+| --- | --- |
+| Usable frontend | Responsive React workbench with dashboard, manual creation, Excel import, comparison, decisions, and history views |
+| Working backend | Express API with Zod validation, normalized errors, health diagnostics, and bounded workflow endpoints |
+| Basic persistence | PostgreSQL through Prisma stores listings, batches, reviews, findings, decisions, revisions, policies, and audit events |
+| Functional LLM workflow | Policy retrieval feeds Gemini structured context; schema and citation allowlists guard the response |
+| Human approval | Suggestions are never auto-applied; every finding requires approve, edit, or reject before finalization |
+| UI states | Dedicated loading, empty, field-validation, success, provider-failure, database-failure, and retry states |
+| Structured logs | Pino JSON logs include request ID, method, path, workflow event, record identifiers, and failures |
+| Focused tests | Twelve backend tests cover deterministic rules, duplicates, policy ranking, parsing, and citation validation |
+| Documentation | This README, `AGENT_USAGE.md`, scoped environment examples, sample data, diagrams, screenshots, and narrated walkthrough |
+| Deployment | `render.yaml` provisions the API and `frontend/vercel.json` handles SPA routing; live URLs must be recorded below after provider deployment |
+
 ## Excluded scope
 
 Publishing, payments, image moderation, seller verification, unrestricted categories, and large-scale batch infrastructure are intentionally excluded.
@@ -409,17 +424,26 @@ Tests focus on validation boundaries, duplicate keys, batch duplicates, policy s
 
 ## Deployment
 
-The frontend is designed for Vercel, the Express API for Render or Railway, and PostgreSQL for Neon or Supabase. Deployment URLs and final verification details will be added before submission.
+The frontend is configured for Vercel, the Express API for Render, and PostgreSQL for Supabase. `render.yaml` and `frontend/vercel.json` are committed so deployment settings remain reviewable. A repository configuration is not evidence of a live deployment: replace the placeholders below only after both URLs have been opened and the review flow has been exercised.
+
+| Review endpoint | Value |
+| --- | --- |
+| Frontend URL | `PENDING_PROVIDER_DEPLOYMENT` |
+| API health URL | `PENDING_PROVIDER_DEPLOYMENT/api/health` |
+| Test account | Not required; authentication is intentionally outside this bounded assignment |
+| Sample input | `samples/listings.json` or the idempotent seeded examples |
 
 ### Frontend
 
-Deploy `frontend`, build with `npm run build`, publish `dist`, and set `VITE_API_BASE_URL` to the hosted API URL ending in `/api`.
+Create a Vercel project with **Root Directory** set to `frontend`. Use `npm run build`, publish `dist`, and set `VITE_API_BASE_URL` to the hosted API URL ending in `/api`. The committed rewrite sends React Router paths back to `index.html`.
 
 ### Backend
 
-Build with `npm install && npm run build -w backend` and start with `npm run start -w backend`. Configure `DATABASE_URL`, `DATABASE_CA_CERT_PATH`, `GEMINI_API_KEY`, `GEMINI_MODEL`, and `CLIENT_ORIGIN`. Store the Supabase certificate as a secret file, not in Git.
+Create the API from the repository's Render Blueprint. It installs dependencies, generates Prisma Client, builds the backend, starts the compiled server, and checks `/api/health`. Configure `DATABASE_URL`, `GEMINI_API_KEY`, and `CLIENT_ORIGIN`; `GEMINI_MODEL` already has a safe default. Set `DATABASE_CA_CERT_PATH` only when the certificate is mounted as a secret file. Never put a credential or certificate in Git.
 
-Before submission, verify health, manual creation, Excel import, one successful AI review, all three decision actions, finalization, retry behavior, and page refresh persistence.
+After Vercel assigns the frontend URL, set Render's `CLIENT_ORIGIN` to that exact origin. After Render assigns the API URL, set Vercel's `VITE_API_BASE_URL` to `<render-url>/api` and redeploy the frontend.
+
+Before submission, verify health, manual creation, Excel import, one successful AI review, all three decision actions, finalization, retry behavior, and page-refresh persistence. Keep the deployment and Gemini quota available until the evaluation is complete, then replace the placeholder URLs in this section and include the same URLs plus `samples/listings.json` in the submission remarks.
 
 ## Troubleshooting
 

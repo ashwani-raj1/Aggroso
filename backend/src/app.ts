@@ -126,6 +126,7 @@ app.post("/api/batches", async (req, res) => {
   const batch = await prisma.batch.create({ data: { totalCount: input.listings.length } });
   await prisma.$transaction(input.listings.map((listing) => prisma.listing.create({ data: { ...listingCreateData(listing), price: listing.price, normalizedKey: normalizedListingKey(listing), batchId: batch.id } })));
   const createdBatch = await prisma.batch.findUnique({ where: { id: batch.id }, include: { listings: true } });
+  req.log?.info({ event: "batch_created", batchId: batch.id, listingCount: input.listings.length });
   res.status(201).json({ data: createdBatch ? { ...createdBatch, listings: createdBatch.listings.map(withImageUrl) } : createdBatch });
 });
 
@@ -141,6 +142,12 @@ app.post("/api/listings/:id/review", async (req, res) => {
     await tx.listing.update({ where: { id: listing.id }, data: { status: "REVIEWING" } });
     return tx.review.create({ data: { listingId: listing.id, status: "RUNNING", deterministicPassed: true, retrievedPolicyCodes: relevantPolicies.map((policy) => policy.code) } });
   });
+  req.log?.info({
+    event: "ai_review_started",
+    reviewId: review.id,
+    listingId: listing.id,
+    policyCodes: relevantPolicies.map((policy) => policy.code)
+  });
 
   try {
     const aiResult = await reviewWithAi(input, relevantPolicies);
@@ -155,6 +162,13 @@ app.post("/api/listings/:id/review", async (req, res) => {
       include: { findings: true }
     });
     await prisma.listing.update({ where: { id: listing.id }, data: { status: aiResult.findings.length ? "NEEDS_CHANGES" : "APPROVED" } });
+    req.log?.info({
+      event: "ai_review_completed",
+      reviewId: review.id,
+      listingId: listing.id,
+      findingCount: aiResult.findings.length,
+      outcome: aiResult.findings.length ? "NEEDS_CHANGES" : "APPROVED"
+    });
     res.status(201).json({ data: finished });
   } catch (error) {
     const message = error instanceof Error ? error.message : "AI review failed";
@@ -184,6 +198,7 @@ app.post("/api/reviews/:reviewId/findings/:findingId/decisions", async (req, res
   const finding = await prisma.finding.findFirst({ where: { id: req.params.findingId, reviewId: req.params.reviewId } });
   if (!finding) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Finding not found", requestId: res.locals.requestId } });
   const decision = await prisma.decision.create({ data: { reviewId: req.params.reviewId, findingId: finding.id, ...input, appliedWording: input.action === "APPROVE" ? finding.suggestedWording : input.appliedWording } });
+  req.log?.info({ event: "review_decision_recorded", reviewId: req.params.reviewId, findingId: finding.id, decisionId: decision.id, action: decision.action });
   res.status(201).json({ data: decision });
 });
 
@@ -218,6 +233,7 @@ app.post("/api/reviews/:reviewId/finalize", async (req, res) => {
     await tx.auditLog.create({ data: { listingId: review.listingId, action: "REVIEW_FINALIZED", metadata: { reviewId: review.id, revisionId: snapshot.id } } });
     return snapshot;
   });
+  req.log?.info({ event: "review_finalized", reviewId: review.id, listingId: review.listingId, revisionId: result.id });
   res.status(201).json({ data: result });
 });
 
