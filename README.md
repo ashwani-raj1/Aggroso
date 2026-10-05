@@ -41,9 +41,9 @@ A human-in-the-loop application that validates marketplace listings, retrieves r
 
 ## Project walkthrough video
 
-[![Watch the complete Marketplace Listing Quality Reviewer walkthrough](docs/video/project-walkthrough-poster.png)](docs/video/project-walkthrough.mp4)
+![Complete Marketplace Listing Quality Reviewer walkthrough](docs/video/project-walkthrough.gif)
 
-▶ **[Watch or download the 63-second project walkthrough](docs/video/project-walkthrough.mp4)**
+The walkthrough plays automatically inside GitHub. For full 1280×720 quality, use the optional **[MP4 version](docs/video/project-walkthrough.mp4)**.
 
 The video covers the system architecture, repository structure, dashboard, manual listing entry, Excel batch import, cited Gemini findings, human approval controls, revision finalization, and audit history. It is captioned throughout and does not require audio. The reproducible storyboard is available at [`docs/video/storyboard.html`](docs/video/storyboard.html).
 
