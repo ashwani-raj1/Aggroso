@@ -19,7 +19,7 @@ A human-in-the-loop application that validates marketplace listings, retrieves r
 
 ## Documentation map
 
-- [Product snapshot](#product-snapshot)
+- [Product screenshots](#product-screenshots)
 - [Architecture](#architecture)
 - [End-to-end workflows](#end-to-end-workflows)
 - [Deterministic rules](#deterministic-rules)
@@ -38,11 +38,31 @@ A human-in-the-loop application that validates marketplace listings, retrieves r
 | --- | --- | --- | --- | --- |
 | Manual form or Excel | Required fields, price, category, lengths, duplicates | Cited, severity-ranked findings and proposed wording | Approve, edit, reject, finalize | Original, attempts, decisions, revisions, audit log |
 
-## Product snapshot
+## Product screenshots
 
-![Listing quality dashboard](docs/screenshots/dashboard.png)
+### 1. Operations dashboard
 
-The dashboard includes explicit loading, empty, filtered, and failure states. This development snapshot demonstrates the database failure state rather than silently presenting an unavailable database as an empty result.
+![Dashboard showing seeded listings and review statuses](docs/screenshots/dashboard.png)
+
+The dashboard summarizes the complete queue and provides filters for `PENDING`, `REVIEWING` (shown as **Evaluating**), `NEEDS_CHANGES`, `APPROVED`, and `FAILED`.
+
+### 2. Manual listing intake
+
+![Manual listing form with INR price and image upload](docs/screenshots/create-listing.png)
+
+Manual entry supports the required marketplace fields, INR pricing, tags, an image URL, or an image selected from the reviewer’s computer.
+
+### 3. Excel batch intake
+
+![Excel batch import workspace](docs/screenshots/excel-import.png)
+
+The batch workspace provides a downloadable template, validates the first worksheet, previews parsed rows, and limits each batch to 20 listings.
+
+### 4. Human review workbench
+
+![Review workbench showing a cited policy finding](docs/screenshots/review-workbench.png)
+
+The workbench shows the immutable source listing, review history, severity, evidence, exact policy code, suggested wording when available, and reviewer decision controls.
 
 ### Product journey
 
@@ -55,7 +75,7 @@ The dashboard includes explicit loading, empty, filtered, and failure states. Th
 - PostgreSQL and Prisma
 - Zod validation
 - Gemini 3.5 Flash Lite structured JSON output
-- Vitest, React Testing Library, and Supertest
+- Vitest and Supertest
 
 | Frontend | Backend | Data and AI | Quality |
 | --- | --- | --- | --- |
@@ -72,10 +92,10 @@ flowchart LR
     D --> P[Policy retrieval]
     P --> G[Gemini structured review]
     G --> C[Citation guardrails]
-    C --> DB[(Supabase PostgreSQL)]
+    C -->|Persist review + findings| DB[(Supabase PostgreSQL)]
     F -->|Approve / edit / reject| E
-    E --> R[Revision service]
-    R --> DB
+    E --> R[Decision + revision workflow]
+    R -->|Append decisions + snapshot| DB
 ```
 
 The backend follows a small layered design: routes coordinate the workflow, domain modules contain pure validation and policy logic, the Gemini service owns provider communication, Prisma persists workflow state, and middleware normalizes errors. Every request receives an `x-request-id` that also appears in structured Pino logs.
@@ -91,19 +111,25 @@ sequenceDiagram
     participant API as Express API
     participant DB as PostgreSQL
     participant AI as Gemini
-    Reviewer->>UI: Enter listing or import Excel row
-    UI->>API: Create listing
-    API->>API: Validate fields and duplicate key
-    API->>DB: Preserve original listing
-    API-->>UI: PENDING
-    UI->>API: Request review
-    API->>DB: Mark REVIEWING
+    Reviewer->>UI: Enter listing
+    UI->>API: POST /api/listings
+    API->>API: Zod validation + normalized duplicate key
+    API->>DB: Insert original + LISTING_CREATED audit event
+    API-->>UI: Listing status PENDING
+    UI->>API: POST /api/listings/:id/review
+    API->>DB: Listing=REVIEWING; Review=RUNNING
     API->>API: Retrieve relevant policies
     API->>AI: Listing + permitted policy sections
     AI-->>API: Structured findings
     API->>API: Validate JSON and citations
-    API->>DB: Save attempt and findings
-    API-->>UI: NEEDS_CHANGES or APPROVED
+    alt Findings returned
+        API->>DB: Review=COMPLETED; Listing=NEEDS_CHANGES
+    else No findings
+        API->>DB: Review=COMPLETED; Listing=APPROVED
+    else Provider or parsing failure
+        API->>DB: Review=FAILED; Listing=FAILED
+    end
+    API-->>UI: Persisted review result
 ```
 
 ### Human approval lifecycle
@@ -125,7 +151,48 @@ Finalization creates an immutable `RevisedListing`; it never overwrites the orig
 
 ### Batch processing
 
-The browser parses the first Excel worksheet, validates its shape, and submits at most 20 records. The API rejects duplicates within the batch and against persisted records, creates one `Batch`, and stores accepted listings. Reviews run sequentially so one failure does not hide other results and Gemini traffic stays bounded. Dashboard polling exposes each listing's live status.
+```mermaid
+sequenceDiagram
+    actor Reviewer
+    participant UI as Excel workspace
+    participant API as Express API
+    participant DB as PostgreSQL
+    participant AI as Gemini
+    Reviewer->>UI: Select XLSX / XLS file
+    UI->>UI: Parse first sheet and preview 1–20 rows
+    UI->>API: POST /api/batches
+    API->>API: Validate records + within-batch duplicates
+    API->>DB: Check persisted duplicate keys
+    API->>DB: Create Batch + Listings transaction
+    API-->>UI: Created batch and listings
+    UI->>UI: Return immediately to dashboard
+    loop Each listing, sequentially
+        UI->>API: POST /api/listings/:id/review
+        API->>AI: Grounded review
+        API->>DB: Persist independent result or failure
+        UI->>API: Refresh dashboard listings
+    end
+```
+
+One failed AI review does not stop subsequent batch listings. The dashboard polls only while at least one listing is actively `REVIEWING`; ordinary `PENDING` listings do not create continuous database traffic.
+
+### Finding decisions and finalization
+
+```mermaid
+flowchart LR
+    F[Finding] --> A[Approve suggestion]
+    F --> E[Edit then approve]
+    F --> R[Reject finding]
+    A --> D[(Decision history)]
+    E --> D
+    R --> D
+    D --> Q{Every finding has a decision?}
+    Q -->|No| W[Keep finalization disabled]
+    Q -->|Yes| S[Create RevisedListing snapshot]
+    S --> L[Set Review FINALIZED]
+    L --> P[Set Listing APPROVED]
+    P --> H[Append REVIEW_FINALIZED audit event]
+```
 
 ## Deterministic rules
 
@@ -159,10 +226,10 @@ The prompt explicitly prohibits invented specifications. Missing information may
 
 ```mermaid
 erDiagram
-    Batch ||--o{ Listing : contains
+    Batch o|--o{ Listing : groups
     Listing ||--o{ Review : has
     Listing ||--o{ RevisedListing : snapshots
-    Listing ||--o{ AuditLog : records
+    Listing o|--o{ AuditLog : records
     Review ||--o{ Finding : returns
     Review ||--o{ Decision : receives
     Finding ||--o{ Decision : resolved_by
@@ -183,7 +250,7 @@ erDiagram
     Review {
       string id PK
       ReviewStatus status
-      string[] retrievedPolicyCodes
+      string_array retrievedPolicyCodes
       json aiRawResponse
       int retryCount
     }
@@ -210,7 +277,18 @@ erDiagram
       json metadata
       datetime timestamp
     }
+    PolicySection {
+      string id PK
+      string code UK
+      string category
+      string title
+      string content
+      string_array keywords
+      boolean isActive
+    }
 ```
+
+`PolicySection` is intentionally not connected by a database foreign key: findings preserve the cited `policyCode`, while each review also stores the exact `retrievedPolicyCodes` supplied to Gemini. The backend verifies that every returned citation belongs to that retrieved set before saving it.
 
 Images are compressed in the browser and stored in `attributes.__imageUrl` for this bounded demonstration. Production should use object storage and retain only an asset URL in PostgreSQL.
 
@@ -242,7 +320,7 @@ The seed command is idempotent and also adds six reviewer-friendly sample listin
 
 ### Supabase note
 
-The transaction pooler uses port `6543`. The backend uses Prisma's PostgreSQL driver adapter with a one-connection `pg` pool to avoid prepared-statement collisions. Prisma schema-management commands can still fail through transaction pooling, so the initial schema is supplied as `backend/prisma/init.sql` for the Supabase SQL Editor.
+The transaction pooler uses port `6543`. The backend uses Prisma's PostgreSQL driver adapter with a bounded five-connection `pg` pool, verified TLS, connection keep-alive, and joined relation loading for detail pages. Prisma schema-management commands can still fail through transaction pooling, so the initial schema is supplied as `backend/prisma/init.sql` for the Supabase SQL Editor.
 
 For verified TLS, download the server root certificate from **Supabase → Project Settings → Database → SSL Configuration**, save it as `backend/certs/prod-supabase.crt`, and configure:
 
