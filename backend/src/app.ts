@@ -15,6 +15,24 @@ import { reviewWithAi } from "./services/gemini-review.js";
 const logger = pino();
 export const app = express();
 
+function imageUrlFromAttributes(attributes: Prisma.JsonValue | Prisma.InputJsonValue) {
+  if (!attributes || Array.isArray(attributes) || typeof attributes !== "object") return undefined;
+  const imageUrl = (attributes as Record<string, unknown>).__imageUrl;
+  return typeof imageUrl === "string" ? imageUrl : undefined;
+}
+
+function withImageUrl<T extends { attributes: Prisma.JsonValue }>(listing: T) {
+  return { ...listing, imageUrl: imageUrlFromAttributes(listing.attributes) };
+}
+
+function listingCreateData(input: z.infer<typeof listingInputSchema>) {
+  const { imageUrl, ...listing } = input;
+  return {
+    ...listing,
+    attributes: { ...listing.attributes, ...(imageUrl ? { __imageUrl: imageUrl } : {}) }
+  };
+}
+
 const configuredOrigins = new Set(
   config.CLIENT_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean)
 );
@@ -44,7 +62,7 @@ app.use((req, res, next) => {
 });
 
 app.get("/api/health", async (_req, res) => {
-  await prisma.$queryRaw`SELECT 1`;
+  await prisma.listing.count();
   res.json({ status: "ok", database: "connected", aiProvider: "gemini", aiConfigured: Boolean(config.GEMINI_API_KEY) });
 });
 
@@ -59,13 +77,13 @@ app.get("/api/policies", (_req, res) => res.json({ data: policies }));
 
 app.get("/api/listings", async (_req, res) => {
   const listings = await prisma.listing.findMany({ orderBy: { createdAt: "desc" }, include: { reviews: { select: { id: true, status: true, createdAt: true } } } });
-  res.json({ data: listings });
+  res.json({ data: listings.map(withImageUrl) });
 });
 
 app.get("/api/listings/:id", async (req, res) => {
   const listing = await prisma.listing.findUnique({ where: { id: req.params.id }, include: { reviews: { orderBy: { createdAt: "asc" }, include: { findings: { include: { decisions: { orderBy: { decidedAt: "asc" } } } }, decisions: true } }, revisions: { orderBy: { finalizedAt: "desc" } }, auditLogs: { orderBy: { timestamp: "desc" } } } });
   if (!listing) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Listing not found", requestId: res.locals.requestId } });
-  res.json({ data: listing });
+  res.json({ data: { ...withImageUrl(listing), revisions: listing.revisions.map(withImageUrl) } });
 });
 
 app.post("/api/listings", async (req, res) => {
@@ -75,7 +93,7 @@ app.post("/api/listings", async (req, res) => {
   if (duplicate) return res.status(409).json({ error: { code: "DUPLICATE_LISTING", message: "An equivalent listing already exists", requestId: res.locals.requestId } });
 
   const listing = await prisma.listing.create({
-    data: { ...input, price: input.price, normalizedKey, auditLogs: { create: { action: "LISTING_CREATED", metadata: { source: "single" } } } }
+    data: { ...listingCreateData(input), price: input.price, normalizedKey, auditLogs: { create: { action: "LISTING_CREATED", metadata: { source: "single" } } } }
   });
   req.log?.info({ event: "listing_created", listingId: listing.id });
   res.status(201).json({ data: listing });
@@ -91,8 +109,9 @@ app.post("/api/batches", async (req, res) => {
   if (existing.length > 0) return res.status(409).json({ error: { code: "DUPLICATE_LISTING", message: "One or more listings already exist", requestId: res.locals.requestId } });
 
   const batch = await prisma.batch.create({ data: { totalCount: input.listings.length } });
-  await prisma.$transaction(input.listings.map((listing) => prisma.listing.create({ data: { ...listing, price: listing.price, normalizedKey: normalizedListingKey(listing), batchId: batch.id } })));
-  res.status(201).json({ data: await prisma.batch.findUnique({ where: { id: batch.id }, include: { listings: true } }) });
+  await prisma.$transaction(input.listings.map((listing) => prisma.listing.create({ data: { ...listingCreateData(listing), price: listing.price, normalizedKey: normalizedListingKey(listing), batchId: batch.id } })));
+  const createdBatch = await prisma.batch.findUnique({ where: { id: batch.id }, include: { listings: true } });
+  res.status(201).json({ data: createdBatch ? { ...createdBatch, listings: createdBatch.listings.map(withImageUrl) } : createdBatch });
 });
 
 app.post("/api/listings/:id/review", async (req, res) => {
@@ -101,7 +120,7 @@ app.post("/api/listings/:id/review", async (req, res) => {
   if (listing.status === "REVIEWING") {
     return res.status(409).json({ error: { code: "REVIEW_IN_PROGRESS", message: "A review is already in progress for this listing", requestId: res.locals.requestId } });
   }
-  const input = listingInputSchema.parse({ ...listing, price: listing.price.toString() });
+  const input = listingInputSchema.parse({ ...listing, price: listing.price.toString(), imageUrl: imageUrlFromAttributes(listing.attributes) });
   const relevantPolicies = retrievePolicies(input);
   const review = await prisma.$transaction(async (tx) => {
     await tx.listing.update({ where: { id: listing.id }, data: { status: "REVIEWING" } });
@@ -166,8 +185,7 @@ app.post("/api/reviews/:reviewId/finalize", async (req, res) => {
     price: review.listing.price,
     attributes: (review.listing.attributes ?? {}) as Prisma.InputJsonValue,
     seller: review.listing.seller,
-    tags: review.listing.tags,
-    imageUrl: review.listing.imageUrl
+    tags: review.listing.tags
   };
   for (const finding of review.findings) {
     const decision = finding.decisions[0];

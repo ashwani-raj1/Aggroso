@@ -25,7 +25,6 @@ CREATE TABLE IF NOT EXISTS "Listing" (
   "attributes" JSONB NOT NULL,
   "seller" TEXT NOT NULL,
   "tags" TEXT[] NOT NULL,
-  "imageUrl" TEXT,
   "normalizedKey" TEXT NOT NULL,
   "status" "ListingStatus" NOT NULL DEFAULT 'PENDING',
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -85,7 +84,6 @@ CREATE TABLE IF NOT EXISTS "RevisedListing" (
   "attributes" JSONB NOT NULL,
   "seller" TEXT NOT NULL,
   "tags" TEXT[] NOT NULL,
-  "imageUrl" TEXT,
   "finalizedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT "RevisedListing_listingId_fkey" FOREIGN KEY ("listingId") REFERENCES "Listing"("id") ON DELETE CASCADE ON UPDATE CASCADE
 );

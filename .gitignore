@@ -4,6 +4,9 @@ dist/
 .env.*
 !.env.example
 coverage/
+*.tsbuildinfo
+backend/certs/*.crt
+backend/certs/*.cer
 *.log
 .DS_Store
 .idea/

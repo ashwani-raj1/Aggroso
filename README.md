@@ -22,6 +22,8 @@ A human-in-the-loop application that validates marketplace listings, retrieves r
 
 The frontend runs at `http://localhost:5173` and the API at `http://localhost:4000`.
 
+The seed command is idempotent and also adds six reviewer-friendly sample listings covering compliant content, medical claims, authenticity claims, incomplete services, refurbished electronics, and home goods.
+
 ### Supabase note
 
 The transaction pooler uses port `6543`. The backend uses Prisma's PostgreSQL driver adapter with a one-connection `pg` pool to avoid prepared-statement collisions. Prisma schema-management commands can still fail through transaction pooling, so the initial schema is supplied as `backend/prisma/init.sql` for the Supabase SQL Editor.

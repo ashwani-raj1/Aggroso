@@ -5,8 +5,6 @@ import { prisma } from "./db.js";
 let server: ReturnType<typeof app.listen> | undefined;
 
 async function start() {
-  await prisma.$executeRawUnsafe('ALTER TABLE "Listing" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT');
-  await prisma.$executeRawUnsafe('ALTER TABLE "RevisedListing" ADD COLUMN IF NOT EXISTS "imageUrl" TEXT');
   server = app.listen(config.PORT, () => {
     console.log(`Marketplace reviewer API listening on http://localhost:${config.PORT}`);
   });

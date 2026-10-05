@@ -27,6 +27,6 @@ export const errorHandler: ErrorRequestHandler = (error, req, res, _next) => {
   }
 
   const internalMessage = error instanceof Error ? error.message : "Unexpected server error";
-  req.log?.error?.({ error: internalMessage, requestId });
+  req.log?.error?.({ err: error, error: internalMessage, requestId });
   res.status(500).json({ error: { code: "INTERNAL_ERROR", message: "Unexpected server error. Check the backend log using the request ID.", requestId } });
 };

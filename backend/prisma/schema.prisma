@@ -61,7 +61,6 @@ model Listing {
   attributes    Json
   seller        String
   tags          String[]
-  imageUrl      String?
   normalizedKey String
   status        ListingStatus @default(PENDING)
   createdAt     DateTime      @default(now())
@@ -134,7 +133,6 @@ model RevisedListing {
   attributes  Json
   seller      String
   tags        String[]
-  imageUrl    String?
   finalizedAt DateTime @default(now())
 
   @@index([listingId])
