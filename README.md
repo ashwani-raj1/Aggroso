@@ -41,11 +41,28 @@ A human-in-the-loop application that validates marketplace listings, retrieves r
 
 ## Project walkthrough video
 
-![Complete Marketplace Listing Quality Reviewer walkthrough](docs/video/project-walkthrough.gif)
+<p align="center">
+  <a href="docs/video/project-walkthrough.mp4">
+    <img src="docs/video/project-walkthrough-play.png" alt="Play the narrated Marketplace Listing Quality Reviewer walkthrough" width="100%" />
+  </a>
+</p>
 
-The visual preview plays automatically inside GitHub. For the complete 1280×720 experience with narration and smooth transitions, open the **[enhanced MP4 walkthrough with audio](docs/video/project-walkthrough.mp4)**.
+<p align="center">
+  <a href="docs/video/project-walkthrough.mp4"><strong>▶ Watch narrated video</strong></a>
+  &nbsp;&nbsp;•&nbsp;&nbsp;
+  <a href="docs/video/project-walkthrough-audio.mp3"><strong>🔊 Listen to audio narration</strong></a>
+</p>
 
-The 99-second demo covers the system architecture, repository structure, dashboard, manual listing entry, deterministic checks, policy retrieval, Gemini structured evaluation, citation guardrails, reviewer decision pop-ups, immutable revision creation, audit history, and Excel batch import. All stages are labeled visually; the MP4 also includes offline-generated English narration. The reproducible [`storyboard.html`](docs/video/storyboard.html) and [`narration.txt`](docs/video/narration.txt) are included with the project.
+Click the preview or **Watch narrated video** to open the complete 1280×720 MP4 with audio and smooth transitions. **Listen to audio narration** opens the same 99-second narration as an MP3.
+
+<details>
+<summary><strong>Show the silent autoplay preview inside GitHub</strong></summary>
+
+![Autoplay preview of the complete Marketplace Listing Quality Reviewer walkthrough](docs/video/project-walkthrough.gif)
+
+</details>
+
+The demo covers the system architecture, repository structure, dashboard, manual listing entry, deterministic checks, policy retrieval, Gemini structured evaluation, citation guardrails, reviewer decision pop-ups, immutable revision creation, audit history, and Excel batch import. All stages are labeled visually; the MP4 includes offline-generated English narration. The reproducible [`storyboard.html`](docs/video/storyboard.html) and [`narration.txt`](docs/video/narration.txt) are included with the project.
 
 ## Product screenshots
 
