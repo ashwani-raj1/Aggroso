@@ -47,6 +47,39 @@
     .closing { display: grid; grid-template-columns: 1.3fr .7fr; align-items: center; height: 100%; gap: 70px; }
     .checklist { display: grid; gap: 15px; }
     .check { padding: 17px 20px; border: 1px solid #3a8065; border-radius: 13px; color: #e4f7ed; background: rgba(255,255,255,.06); font-size: 18px; }
+    .demo-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 28px; margin-top: 24px; }
+    .mock-window { overflow: hidden; height: 500px; border: 1px solid #c5dbcf; border-radius: 18px; background: white; box-shadow: 0 18px 45px rgba(20,55,42,.13); }
+    .window-bar { display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 16px; background: #123a2e; }
+    .window-bar i { width: 10px; height: 10px; border-radius: 50%; background: #78d9a4; }
+    .window-bar span { margin-left: 8px; color: #d8f2e5; font-size: 13px; }
+    .mock-body { padding: 24px; }
+    .field { margin-bottom: 15px; }
+    .field label { display: block; margin-bottom: 6px; color: #64776e; font-size: 12px; font-weight: 700; text-transform: uppercase; }
+    .input { padding: 13px 14px; border: 1px solid #d5e0da; border-radius: 9px; color: #1b3329; background: #fbfdfc; font-size: 16px; }
+    .input.claim { border-color: #efa86e; background: #fff8f0; }
+    .popup { position: relative; min-height: 500px; padding: 28px; border: 1px solid #bdd8ca; border-radius: 18px; background: white; box-shadow: 0 18px 45px rgba(20,55,42,.13); }
+    .popup::before { content: ""; position: absolute; left: -12px; top: 72px; width: 22px; height: 22px; border-left: 1px solid #bdd8ca; border-bottom: 1px solid #bdd8ca; background: white; transform: rotate(45deg); }
+    .popup h3 { margin: 12px 0 8px; font-size: 26px; }
+    .popup > p { font-size: 16px; }
+    .toast { display: flex; gap: 13px; align-items: flex-start; margin-top: 17px; padding: 15px; border: 1px solid #dce7e1; border-radius: 11px; background: #f9fcfa; }
+    .toast b { display: grid; place-items: center; flex: 0 0 28px; height: 28px; border-radius: 50%; color: white; background: #1b8a60; }
+    .toast.warn b { background: #dd862f; }
+    .toast strong { display: block; margin-bottom: 4px; font-size: 15px; }
+    .toast small { color: #63766d; font-size: 13px; line-height: 1.35; }
+    .progress { overflow: hidden; height: 10px; margin: 24px 0; border-radius: 99px; background: #e4eee9; }
+    .progress span { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg,#21a16e,#76daa5); }
+    .policy { margin-top: 14px; padding: 16px; border-left: 5px solid #318d67; border-radius: 9px; background: #eff8f3; }
+    .policy code { color: #176744; font-weight: 800; }
+    .gemini { display: flex; gap: 15px; align-items: center; margin: 22px 0; padding: 18px; border: 1px solid #cfc8fa; border-radius: 13px; background: #f7f5ff; }
+    .spark { display: grid; place-items: center; width: 45px; height: 45px; border-radius: 14px; color: white; background: linear-gradient(135deg,#6952d8,#a073e8); font-size: 22px; }
+    .decision-buttons { display: flex; gap: 10px; margin-top: 24px; }
+    .decision-buttons span { padding: 11px 16px; border: 1px solid #c9d8d0; border-radius: 9px; background: white; font-weight: 700; }
+    .decision-buttons .selected { border-color: #16845b; color: white; background: #16845b; }
+    .audit { margin-top: 26px; border-left: 3px solid #54b486; padding-left: 24px; }
+    .audit div { position: relative; margin-bottom: 22px; }
+    .audit div::before { content: ""; position: absolute; left: -31px; top: 2px; width: 12px; height: 12px; border: 3px solid #eaf7f0; border-radius: 50%; background: #16845b; }
+    .audit strong { display: block; font-size: 17px; }
+    .audit small { color: #697d73; }
   </style>
 </head>
 <body>
@@ -108,6 +141,36 @@
     <div class="eyebrow">Controlled workflow</div><h2>AI proposes. The reviewer decides.</h2>
     <div class="pipeline"><div class="stage"><span class="number">1</span><strong>Create</strong><small>Manual form or Excel batch</small></div><div class="stage"><span class="number">2</span><strong>Validate</strong><small>Rules, format, and duplicates</small></div><div class="stage"><span class="number">3</span><strong>Review</strong><small>Relevant policies and Gemini</small></div><div class="stage"><span class="number">4</span><strong>Decide</strong><small>Approve, edit, or reject</small></div><div class="stage"><span class="number">5</span><strong>Finalize</strong><small>Revision snapshot and audit event</small></div></div>
     <div class="chapter">08 / GOVERNANCE</div>
+  </section>
+
+  <section class="slide" data-slide="10">
+    <div class="eyebrow">Demo — stage 1</div><h2>Submit a listing with a risky absolute claim</h2>
+    <div class="demo-grid"><div class="mock-window"><div class="window-bar"><i></i><i></i><i></i><span>New marketplace listing</span></div><div class="mock-body"><div class="field"><label>Title</label><div class="input claim">Guaranteed instant back pain cure cushion</div></div><div class="field"><label>Description</label><div class="input">Support cushion advertised as providing an instant cure for back pain. Includes washable cover.</div></div><div class="field"><label>Category</label><div class="input">HEALTH_WELLNESS</div></div><div class="field"><label>Price</label><div class="input">₹2,499.00</div></div><div class="field"><label>Seller</label><div class="input">Healthy Living India</div></div></div></div><div class="popup"><div class="eyebrow">Deterministic checks</div><h3>Validating before AI</h3><p>Fast rules run first, so invalid data never consumes a Gemini request.</p><div class="toast"><b>✓</b><div><strong>Required fields complete</strong><small>Title, description, category, price, and seller are present.</small></div></div><div class="toast"><b>✓</b><div><strong>Price and category valid</strong><small>INR format and supported category passed.</small></div></div><div class="toast"><b>✓</b><div><strong>No duplicate detected</strong><small>Normalized seller, category, and title are unique.</small></div></div></div></div>
+    <div class="chapter">05 / VALIDATION DEMO</div>
+  </section>
+
+  <section class="slide" data-slide="11">
+    <div class="eyebrow">Demo — stage 2</div><h2>Retrieve only the policies relevant to this listing</h2>
+    <div class="demo-grid"><div class="mock-window"><div class="window-bar"><i></i><i></i><i></i><span>Policy retrieval engine</span></div><div class="mock-body"><p style="font-size:16px">Category and keyword scoring selects a small, auditable context.</p><div class="policy"><code>POL-HEALTH-01</code><br/><strong>Medical and health claims</strong><br/><small>Listings must not claim to diagnose, treat, cure, or prevent a condition without authorization and evidence.</small></div><div class="policy"><code>POL-CLAIMS-01</code><br/><strong>Unverifiable and absolute claims</strong><br/><small>Guaranteed claims require reliable supporting evidence.</small></div><div class="policy"><code>STYLE-CLEAR-01</code><br/><strong>Clear marketplace writing</strong><br/><small>Titles should be readable, specific, and free of promotional clutter.</small></div></div></div><div class="popup"><div class="eyebrow">Context control</div><h3>Top policies selected</h3><p>The complete rulebook is not dumped into the prompt.</p><div class="progress"><span style="width:68%"></span></div><div class="toast"><b>3</b><div><strong>Retrieved policy sections</strong><small>Every permitted policy code is stored with this review attempt.</small></div></div><div class="toast"><b>✓</b><div><strong>Citation allowlist ready</strong><small>Gemini cannot save a finding that cites a policy outside this set.</small></div></div></div></div>
+    <div class="chapter">06 / POLICY RETRIEVAL</div>
+  </section>
+
+  <section class="slide" data-slide="12">
+    <div class="eyebrow">Demo — stage 3</div><h2>Gemini evaluates content using structured output</h2>
+    <div class="demo-grid"><div class="mock-window"><div class="window-bar"><i></i><i></i><i></i><span>Review status: EVALUATING</span></div><div class="mock-body"><div class="gemini"><div class="spark">✦</div><div><strong>Gemini structured review</strong><br/><small>Temperature 0 · JSON schema enforced</small></div></div><div class="field"><label>Input</label><div class="input">Listing + 3 retrieved policy sections</div></div><div class="field"><label>Required output</label><div class="input">Field · Issue type · Severity · Evidence · Policy code · Suggested wording</div></div><div class="progress"><span style="width:86%"></span></div><p style="font-size:16px">Analyzing misleading, prohibited, incomplete, unverifiable, and style-related content…</p></div></div><div class="popup"><div class="eyebrow">AI guardrails</div><h3>Validate before saving</h3><div class="toast"><b>✓</b><div><strong>JSON schema passed</strong><small>Unknown fields and enum values are rejected.</small></div></div><div class="toast"><b>✓</b><div><strong>Citation verified</strong><small>POL-HEALTH-01 was included in the retrieved context.</small></div></div><div class="toast warn"><b>!</b><div><strong>No invented facts</strong><small>The model may propose safer wording but cannot manufacture specifications.</small></div></div></div></div>
+    <div class="chapter">07 / GEMINI EVALUATION</div>
+  </section>
+
+  <section class="slide" data-slide="13">
+    <div class="eyebrow">Demo — stage 4</div><h2>A cited finding appears for human review</h2>
+    <div class="demo-grid"><div class="mock-window"><div class="window-bar"><i></i><i></i><i></i><span>Policy finding</span></div><div class="mock-body"><span style="display:inline-block;padding:7px 11px;border-radius:99px;color:#8d360f;background:#ffe1cc;font-weight:800">CRITICAL</span><h3 style="font-size:24px">Unapproved medical cure claim</h3><div class="policy"><strong>Evidence</strong><br/>“Guaranteed instant back pain cure”</div><div class="policy"><code>POL-HEALTH-01</code><br/>Medical and health claims require appropriate authorization and evidence.</div><div class="field" style="margin-top:18px"><label>Suggested wording</label><div class="input">Supportive comfort cushion for seated use</div></div></div></div><div class="popup"><div class="eyebrow">Human in the loop</div><h3>Reviewer remains in control</h3><p>No suggestion changes the source listing automatically.</p><div class="decision-buttons"><span>Approve</span><span class="selected">Edit &amp; approve</span><span>Reject</span></div><div class="toast"><b>✎</b><div><strong>Operator edit recorded</strong><small>“Ergonomic comfort cushion with washable cover”</small></div></div><div class="toast"><b>✓</b><div><strong>Decision evidence preserved</strong><small>Action, applied wording, notes, and timestamp remain auditable.</small></div></div></div></div>
+    <div class="chapter">08 / REVIEWER DECISION</div>
+  </section>
+
+  <section class="slide" data-slide="14">
+    <div class="eyebrow">Demo — stage 5</div><h2>Finalize an immutable revised listing</h2>
+    <div class="demo-grid"><div class="mock-window"><div class="window-bar"><i></i><i></i><i></i><span>Final status: APPROVED</span></div><div class="mock-body"><div class="toast"><b>✓</b><div><strong>RevisedListing created</strong><small>The original seller submission remains unchanged.</small></div></div><div class="field"><label>Original title</label><div class="input claim">Guaranteed instant back pain cure cushion</div></div><div class="field"><label>Approved title</label><div class="input">Ergonomic comfort cushion with washable cover</div></div><div class="toast"><b>✓</b><div><strong>Ready for marketplace publishing workflow</strong><small>Publishing itself is intentionally outside this assignment.</small></div></div></div></div><div class="popup"><div class="eyebrow">Audit timeline</div><h3>Every important action persists</h3><div class="audit"><div><strong>LISTING_CREATED</strong><small>Original source stored</small></div><div><strong>AI REVIEW COMPLETED</strong><small>Finding and cited context saved</small></div><div><strong>DECISION APPLIED</strong><small>Reviewer edit accepted</small></div><div><strong>REVIEW_FINALIZED</strong><small>Revision snapshot created</small></div></div></div></div>
+    <div class="chapter">09 / APPROVAL &amp; AUDIT</div>
   </section>
 
   <section class="slide dark" data-slide="9">
