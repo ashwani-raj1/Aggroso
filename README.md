@@ -117,17 +117,17 @@ sequenceDiagram
     API->>DB: Insert original + LISTING_CREATED audit event
     API-->>UI: Listing status PENDING
     UI->>API: POST /api/listings/:id/review
-    API->>DB: Listing=REVIEWING; Review=RUNNING
+    API->>DB: Set Listing to REVIEWING and Review to RUNNING
     API->>API: Retrieve relevant policies
     API->>AI: Listing + permitted policy sections
     AI-->>API: Structured findings
     API->>API: Validate JSON and citations
     alt Findings returned
-        API->>DB: Review=COMPLETED; Listing=NEEDS_CHANGES
+        API->>DB: Set Review to COMPLETED and Listing to NEEDS_CHANGES
     else No findings
-        API->>DB: Review=COMPLETED; Listing=APPROVED
+        API->>DB: Set Review to COMPLETED and Listing to APPROVED
     else Provider or parsing failure
-        API->>DB: Review=FAILED; Listing=FAILED
+        API->>DB: Set Review to FAILED and Listing to FAILED
     end
     API-->>UI: Persisted review result
 ```
