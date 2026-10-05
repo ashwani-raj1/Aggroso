@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">Marketplace Listing Quality Reviewer</title>
+  <desc id="desc">A visual summary of deterministic validation, policy-grounded AI review, and human approval.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#062d24"/><stop offset="1" stop-color="#0f7655"/></linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#6ee7a8"/><stop offset="1" stop-color="#d5f7e5"/></linearGradient>
+    <filter id="shadow"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-opacity=".22"/></filter>
+  </defs>
+  <rect width="1200" height="360" rx="28" fill="url(#bg)"/>
+  <circle cx="1110" cy="40" r="190" fill="#6ee7a8" opacity=".08"/><circle cx="60" cy="355" r="170" fill="#fff" opacity=".05"/>
+  <g transform="translate(70 68)">
+    <rect width="62" height="62" rx="18" fill="#80edb3"/><text x="31" y="40" text-anchor="middle" font-family="Arial" font-size="23" font-weight="700" fill="#063a2c">LR</text>
+    <text x="86" y="25" font-family="Arial" font-size="15" font-weight="700" letter-spacing="3" fill="#80edb3">HUMAN-IN-THE-LOOP</text>
+    <text x="86" y="58" font-family="Arial" font-size="24" font-weight="700" fill="#fff">Marketplace Listing Quality Reviewer</text>
+    <text y="114" font-family="Arial" font-size="42" font-weight="700" fill="#fff">Policy-grounded reviews.</text>
+    <text y="164" font-family="Arial" font-size="42" font-weight="700" fill="url(#accent)">Decisions stay human.</text>
+    <text y="210" font-family="Arial" font-size="18" fill="#d9f7e9">Validate listings, generate cited findings, and preserve every approval decision.</text>
+  </g>
+  <g transform="translate(790 72)" filter="url(#shadow)">
+    <rect width="330" height="218" rx="22" fill="#fff" opacity=".97"/>
+    <text x="26" y="38" font-family="Arial" font-size="14" font-weight="700" fill="#557068">REVIEW PIPELINE</text>
+    <g font-family="Arial" font-size="15" font-weight="700" fill="#133d32">
+      <rect x="24" y="58" width="282" height="38" rx="10" fill="#e9f8f0"/><text x="44" y="83">01  Deterministic validation</text>
+      <rect x="24" y="105" width="282" height="38" rx="10" fill="#dcf6e8"/><text x="44" y="130">02  Cited Gemini findings</text>
+      <rect x="24" y="152" width="282" height="38" rx="10" fill="#c9f0dc"/><text x="44" y="177">03  Human approval &amp; audit</text>
+    </g>
+  </g>
+</svg>

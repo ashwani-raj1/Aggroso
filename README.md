@@ -1,14 +1,52 @@
+<p align="center">
+  <img src="docs/assets/readme-hero.svg" alt="Marketplace Listing Quality Reviewer" width="100%" />
+</p>
+
+<p align="center">
+  <img alt="React" src="https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white" />
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.8-3178c6?logo=typescript&logoColor=white" />
+  <img alt="Express" src="https://img.shields.io/badge/Express-5-1f2937?logo=express&logoColor=white" />
+  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-Supabase-3ecf8e?logo=supabase&logoColor=white" />
+  <img alt="Gemini" src="https://img.shields.io/badge/AI-Gemini-8e75ff?logo=googlegemini&logoColor=white" />
+  <img alt="Human reviewed" src="https://img.shields.io/badge/AI_actions-Human_reviewed-167a55" />
+</p>
+
 # Marketplace Listing Quality Reviewer
 
 A human-in-the-loop application that validates marketplace listings, retrieves relevant policy guidance, generates cited AI findings, and lets reviewers approve, edit, or reject suggested revisions.
 
 > **Submission scope:** one bounded marketplace policy set, six supported categories, manual entry, and Excel batches of up to 20 records. AI output is advisory and never changes a listing without human approval.
 
+## Documentation map
+
+- [Product snapshot](#product-snapshot)
+- [Architecture](#architecture)
+- [End-to-end workflows](#end-to-end-workflows)
+- [Deterministic rules](#deterministic-rules)
+- [AI workflow and guardrails](#ai-workflow-and-guardrails)
+- [Data model](#data-model)
+- [Local setup](#local-setup)
+- [Excel import format](#excel-import-format)
+- [API guide](#api-guide)
+- [Tests](#tests)
+- [Deployment](#deployment)
+- [Troubleshooting](#troubleshooting)
+
+## At a glance
+
+| Input | Automated checks | AI output | Human control | Evidence |
+| --- | --- | --- | --- | --- |
+| Manual form or Excel | Required fields, price, category, lengths, duplicates | Cited, severity-ranked findings and proposed wording | Approve, edit, reject, finalize | Original, attempts, decisions, revisions, audit log |
+
 ## Product snapshot
 
 ![Listing quality dashboard](docs/screenshots/dashboard.png)
 
 The dashboard includes explicit loading, empty, filtered, and failure states. This development snapshot demonstrates the database failure state rather than silently presenting an unavailable database as an empty result.
+
+### Product journey
+
+![Five-stage listing review journey](docs/assets/review-workflow.svg)
 
 ## Stack
 
@@ -18,6 +56,10 @@ The dashboard includes explicit loading, empty, filtered, and failure states. Th
 - Zod validation
 - Gemini 3.5 Flash Lite structured JSON output
 - Vitest, React Testing Library, and Supertest
+
+| Frontend | Backend | Data and AI | Quality |
+| --- | --- | --- | --- |
+| React, Vite, TanStack Query, React Router | Express, Zod, Pino | Prisma, PostgreSQL, Gemini | TypeScript, Vitest, Supertest |
 
 ## Architecture
 
@@ -124,6 +166,50 @@ erDiagram
     Review ||--o{ Finding : returns
     Review ||--o{ Decision : receives
     Finding ||--o{ Decision : resolved_by
+    Batch {
+      string id PK
+      int totalCount
+      datetime createdAt
+    }
+    Listing {
+      string id PK
+      string title
+      string category
+      decimal price
+      json attributes
+      string normalizedKey
+      ListingStatus status
+    }
+    Review {
+      string id PK
+      ReviewStatus status
+      string[] retrievedPolicyCodes
+      json aiRawResponse
+      int retryCount
+    }
+    Finding {
+      string id PK
+      string field
+      FindingSeverity severity
+      string policyCode
+      string suggestedWording
+    }
+    Decision {
+      string id PK
+      DecisionAction action
+      string appliedWording
+      string operatorNotes
+    }
+    RevisedListing {
+      string id PK
+      datetime finalizedAt
+    }
+    AuditLog {
+      string id PK
+      string action
+      json metadata
+      datetime timestamp
+    }
 ```
 
 Images are compressed in the browser and stored in `attributes.__imageUrl` for this bounded demonstration. Production should use object storage and retain only an asset URL in PostgreSQL.

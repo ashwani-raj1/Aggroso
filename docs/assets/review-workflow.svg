@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
+  <title id="title">Listing review workflow</title><desc id="desc">Five stages from listing input to immutable revision.</desc>
+  <defs><linearGradient id="line" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#25a36f"/><stop offset="1" stop-color="#75dca8"/></linearGradient><filter id="s"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-opacity=".12"/></filter></defs>
+  <rect width="1200" height="300" rx="24" fill="#f4faf7"/><path d="M142 146H1057" stroke="url(#line)" stroke-width="8" stroke-linecap="round"/>
+  <g font-family="Arial" text-anchor="middle" filter="url(#s)">
+    <g transform="translate(145 145)"><circle r="62" fill="#fff" stroke="#42b883" stroke-width="3"/><text y="-8" font-size="30">📝</text><text y="24" font-size="15" font-weight="700" fill="#123c31">Create</text><text y="44" font-size="12" fill="#647a73">manual / Excel</text></g>
+    <g transform="translate(373 145)"><circle r="62" fill="#fff" stroke="#42b883" stroke-width="3"/><text y="-8" font-size="30">✓</text><text y="24" font-size="15" font-weight="700" fill="#123c31">Validate</text><text y="44" font-size="12" fill="#647a73">rules + duplicates</text></g>
+    <g transform="translate(600 145)"><circle r="62" fill="#fff" stroke="#42b883" stroke-width="3"/><text y="-8" font-size="30">✦</text><text y="24" font-size="15" font-weight="700" fill="#123c31">Review</text><text y="44" font-size="12" fill="#647a73">policies + Gemini</text></g>
+    <g transform="translate(827 145)"><circle r="62" fill="#fff" stroke="#42b883" stroke-width="3"/><text y="-8" font-size="30">⚖</text><text y="24" font-size="15" font-weight="700" fill="#123c31">Decide</text><text y="44" font-size="12" fill="#647a73">approve / edit / reject</text></g>
+    <g transform="translate(1055 145)"><circle r="62" fill="#0f7655" stroke="#0f7655" stroke-width="3"/><text y="-8" font-size="30" fill="#fff">◆</text><text y="24" font-size="15" font-weight="700" fill="#fff">Finalize</text><text y="44" font-size="12" fill="#d5f7e5">revision + audit</text></g>
+  </g>
+</svg>
