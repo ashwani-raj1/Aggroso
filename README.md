@@ -20,6 +20,7 @@ A human-in-the-loop application that validates marketplace listings, retrieves r
 ## Documentation map
 
 - [Product screenshots](#product-screenshots)
+- [Project walkthrough video](#project-walkthrough-video)
 - [Architecture](#architecture)
 - [End-to-end workflows](#end-to-end-workflows)
 - [Deterministic rules](#deterministic-rules)
@@ -37,6 +38,14 @@ A human-in-the-loop application that validates marketplace listings, retrieves r
 | Input | Automated checks | AI output | Human control | Evidence |
 | --- | --- | --- | --- | --- |
 | Manual form or Excel | Required fields, price, category, lengths, duplicates | Cited, severity-ranked findings and proposed wording | Approve, edit, reject, finalize | Original, attempts, decisions, revisions, audit log |
+
+## Project walkthrough video
+
+[![Watch the complete Marketplace Listing Quality Reviewer walkthrough](docs/video/project-walkthrough-poster.png)](docs/video/project-walkthrough.mp4)
+
+▶ **[Watch or download the 63-second project walkthrough](docs/video/project-walkthrough.mp4)**
+
+The video covers the system architecture, repository structure, dashboard, manual listing entry, Excel batch import, cited Gemini findings, human approval controls, revision finalization, and audit history. It is captioned throughout and does not require audio. The reproducible storyboard is available at [`docs/video/storyboard.html`](docs/video/storyboard.html).
 
 ## Product screenshots
 

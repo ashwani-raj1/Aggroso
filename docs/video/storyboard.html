@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Marketplace Listing Quality Reviewer — Walkthrough</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { width: 1280px; height: 720px; margin: 0; overflow: hidden; font-family: "Segoe UI", Arial, sans-serif; color: #14271f; background: #eff7f2; }
+    .slide { display: none; width: 1280px; height: 720px; position: relative; padding: 54px 70px; background: radial-gradient(circle at 92% 8%, #d7f4e5 0 18%, transparent 42%), linear-gradient(135deg, #f8fbf9, #eaf4ef); }
+    .slide.active { display: block; }
+    .slide.dark { color: white; background: radial-gradient(circle at 90% 0%, #1f7658 0 15%, transparent 40%), linear-gradient(135deg, #082d24, #0e4a38); }
+    .eyebrow { color: #16845b; font-size: 15px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+    .dark .eyebrow { color: #86e7b4; }
+    h1 { max-width: 1000px; margin: 14px 0 16px; font-size: 58px; line-height: 1.02; letter-spacing: -.045em; }
+    h2 { margin: 8px 0 20px; font-size: 39px; letter-spacing: -.035em; }
+    p { max-width: 900px; margin: 0; color: #5b7067; font-size: 22px; line-height: 1.45; }
+    .dark p { color: #c9e6d8; }
+    .brand { display: flex; align-items: center; gap: 15px; margin-bottom: 74px; font-size: 22px; font-weight: 750; }
+    .mark { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 15px; color: #083629; background: #83e3ae; font-size: 18px; }
+    .chips { display: flex; gap: 12px; margin-top: 38px; }
+    .chip { padding: 11px 17px; border: 1px solid #4d8b74; border-radius: 999px; color: #daf5e7; background: rgba(255,255,255,.05); font-size: 15px; font-weight: 700; }
+    .chapter { position: absolute; right: 56px; bottom: 36px; color: #6f8379; font-size: 14px; font-weight: 700; letter-spacing: .08em; }
+    .dark .chapter { color: #9fc9b5; }
+    .frame { overflow: hidden; width: 100%; height: 535px; border: 1px solid #cfe0d6; border-radius: 18px; background: white; box-shadow: 0 18px 48px rgba(20,55,42,.14); }
+    .frame img { width: 100%; height: 100%; object-fit: cover; object-position: top center; }
+    .screen-title { display: flex; justify-content: space-between; align-items: end; margin-bottom: 18px; }
+    .screen-title h2 { margin: 0; }
+    .screen-title span { color: #5c7569; font-size: 17px; }
+    .pipeline { display: grid; grid-template-columns: repeat(5, 1fr); gap: 17px; margin-top: 65px; }
+    .stage { position: relative; min-height: 180px; padding: 30px 22px; border: 1px solid #b9dbca; border-radius: 18px; background: white; box-shadow: 0 12px 28px rgba(22,72,52,.09); }
+    .stage:not(:last-child)::after { content: "→"; position: absolute; right: -17px; top: 70px; z-index: 2; color: #2f9a6b; font-size: 25px; font-weight: 800; }
+    .stage strong { display: block; margin: 14px 0 8px; font-size: 20px; }
+    .stage small { color: #61776d; font-size: 15px; line-height: 1.35; }
+    .number { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 12px; color: white; background: #147a55; font-weight: 800; }
+    .architecture { display: grid; grid-template-columns: 1fr 70px 1fr 70px 1fr; align-items: center; margin-top: 45px; }
+    .arch-card { min-height: 260px; padding: 30px; border: 1px solid #b9dbca; border-radius: 20px; background: white; box-shadow: 0 12px 32px rgba(22,72,52,.1); }
+    .arch-card h3 { margin: 16px 0 18px; font-size: 25px; }
+    .arch-card ul { margin: 0; padding-left: 20px; color: #60756b; font-size: 17px; line-height: 1.75; }
+    .arrow { text-align: center; color: #23865f; font-size: 38px; font-weight: 800; }
+    .tree { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 26px; }
+    .tree pre { height: 470px; margin: 0; padding: 28px; border: 1px solid #bdd8ca; border-radius: 17px; color: #d7f5e6; background: #0c3429; font: 17px/1.48 Consolas, monospace; box-shadow: 0 14px 35px rgba(17,58,44,.14); }
+    .notes { display: grid; gap: 13px; }
+    .note { padding: 18px 20px; border-left: 5px solid #28a36f; border-radius: 10px; background: white; box-shadow: 0 8px 22px rgba(22,72,52,.07); }
+    .note strong { display: block; margin-bottom: 5px; font-size: 18px; }
+    .note span { color: #657970; font-size: 15px; }
+    .closing { display: grid; grid-template-columns: 1.3fr .7fr; align-items: center; height: 100%; gap: 70px; }
+    .checklist { display: grid; gap: 15px; }
+    .check { padding: 17px 20px; border: 1px solid #3a8065; border-radius: 13px; color: #e4f7ed; background: rgba(255,255,255,.06); font-size: 18px; }
+  </style>
+</head>
+<body>
+  <section class="slide dark" data-slide="1">
+    <div class="brand"><span class="mark">LR</span> Listing Review</div>
+    <div class="eyebrow">Complete project walkthrough</div>
+    <h1>Marketplace Listing<br/>Quality Reviewer</h1>
+    <p>Deterministic validation, policy-grounded Gemini findings, and human-controlled revisions in one auditable workflow.</p>
+    <div class="chips"><span class="chip">React + Vite</span><span class="chip">Express + TypeScript</span><span class="chip">Prisma + Supabase</span><span class="chip">Gemini</span></div>
+    <div class="chapter">01 / INTRODUCTION</div>
+  </section>
+
+  <section class="slide" data-slide="2">
+    <div class="eyebrow">System architecture</div><h2>Clear separation between interface, workflow, and persistence</h2>
+    <div class="architecture">
+      <div class="arch-card"><div class="number">UI</div><h3>React frontend</h3><ul><li>Dashboard and status filters</li><li>Manual and Excel intake</li><li>Review decision workbench</li><li>Loading and failure states</li></ul></div>
+      <div class="arrow">→</div>
+      <div class="arch-card"><div class="number">API</div><h3>Express backend</h3><ul><li>Zod validation</li><li>Duplicate detection</li><li>Policy retrieval</li><li>Gemini citation guardrails</li></ul></div>
+      <div class="arrow">→</div>
+      <div class="arch-card"><div class="number">DB</div><h3>Supabase Postgres</h3><ul><li>Original listings</li><li>Review attempts and findings</li><li>Decisions and revisions</li><li>Audit history</li></ul></div>
+    </div>
+    <div class="chapter">02 / ARCHITECTURE</div>
+  </section>
+
+  <section class="slide" data-slide="3">
+    <div class="eyebrow">Code structure</div><h2>A small, typed monorepo organized by responsibility</h2>
+    <div class="tree">
+      <pre>Aggroso/
+├── frontend/
+│   └── src/
+│       ├── pages/
+│       │   ├── Dashboard.tsx
+│       │   ├── NewListing.tsx
+│       │   ├── BatchImport.tsx
+│       │   └── ListingDetail.tsx
+│       ├── api.ts
+│       └── types.ts
+├── backend/
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   └── seed.ts
+│   └── src/
+│       ├── domain/
+│       ├── services/
+│       ├── middleware/
+│       └── app.ts
+└── samples/</pre>
+      <div class="notes"><div class="note"><strong>Pages</strong><span>Focused UI workflows and explicit states.</span></div><div class="note"><strong>Domain</strong><span>Pure validation, duplicate, policy, and citation rules.</span></div><div class="note"><strong>Services</strong><span>Gemini integration behind a structured response contract.</span></div><div class="note"><strong>Prisma</strong><span>Relational persistence and immutable review history.</span></div><div class="note"><strong>Tests</strong><span>12 focused backend tests for important behavior.</span></div></div>
+    </div>
+    <div class="chapter">03 / REPOSITORY</div>
+  </section>
+
+  <section class="slide" data-slide="4"><div class="screen-title"><div><div class="eyebrow">Operations</div><h2>Review status dashboard</h2></div><span>Live queue, metrics, INR prices, and filters</span></div><div class="frame"><img src="../screenshots/dashboard.png" alt="Dashboard"/></div><div class="chapter">04 / DASHBOARD</div></section>
+  <section class="slide" data-slide="5"><div class="screen-title"><div><div class="eyebrow">Single intake</div><h2>Create a marketplace listing</h2></div><span>Validation, image upload, categories, and tags</span></div><div class="frame"><img src="../screenshots/create-listing.png" alt="Create listing"/></div><div class="chapter">05 / MANUAL ENTRY</div></section>
+  <section class="slide" data-slide="6"><div class="screen-title"><div><div class="eyebrow">Batch intake</div><h2>Import up to 20 Excel rows</h2></div><span>Template download, parsing, preview, and isolated reviews</span></div><div class="frame"><img src="../screenshots/excel-import.png" alt="Excel import"/></div><div class="chapter">06 / EXCEL IMPORT</div></section>
+  <section class="slide" data-slide="7"><div class="screen-title"><div><div class="eyebrow">Human review</div><h2>Inspect cited AI findings</h2></div><span>Severity, evidence, policy citation, and decisions</span></div><div class="frame"><img src="../screenshots/review-workbench.png" alt="Review workbench"/></div><div class="chapter">07 / REVIEW WORKBENCH</div></section>
+
+  <section class="slide" data-slide="8">
+    <div class="eyebrow">Controlled workflow</div><h2>AI proposes. The reviewer decides.</h2>
+    <div class="pipeline"><div class="stage"><span class="number">1</span><strong>Create</strong><small>Manual form or Excel batch</small></div><div class="stage"><span class="number">2</span><strong>Validate</strong><small>Rules, format, and duplicates</small></div><div class="stage"><span class="number">3</span><strong>Review</strong><small>Relevant policies and Gemini</small></div><div class="stage"><span class="number">4</span><strong>Decide</strong><small>Approve, edit, or reject</small></div><div class="stage"><span class="number">5</span><strong>Finalize</strong><small>Revision snapshot and audit event</small></div></div>
+    <div class="chapter">08 / GOVERNANCE</div>
+  </section>
+
+  <section class="slide dark" data-slide="9">
+    <div class="closing"><div><div class="eyebrow">Ready for review</div><h1>Complete, tested,<br/>and auditable.</h1><p>The core workflow is implemented end to end with secure configuration, sample data, documentation, focused tests, and deployment guidance.</p></div><div class="checklist"><div class="check">✓ Deterministic validation</div><div class="check">✓ Grounded Gemini review</div><div class="check">✓ Human approval controls</div><div class="check">✓ Persistent audit history</div><div class="check">✓ Build and tests passing</div></div></div>
+    <div class="chapter">09 / COMPLETE</div>
+  </section>
+  <script>
+    const slide = new URLSearchParams(location.search).get("slide") || "1";
+    document.querySelector(`[data-slide="${slide}"]`)?.classList.add("active");
+  </script>
+</body>
+</html>
