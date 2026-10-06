@@ -1,6 +1,11 @@
 import type { Listing, ListingDetail, ListingInput } from "./types";
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000/api";
+function normalizeApiBase(value: string) {
+  const base = value.trim().replace(/\/+$/, "");
+  return /\/api$/i.test(base) ? base : `${base}/api`;
+}
+
+const API_BASE = normalizeApiBase(import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000/api");
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
