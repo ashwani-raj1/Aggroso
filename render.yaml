@@ -3,7 +3,9 @@ services:
     name: marketplace-reviewer-api
     runtime: node
     plan: free
-    buildCommand: npm ci && npm run db:generate -w backend && npm run build -w backend
+    # TypeScript, Prisma CLI, and declaration packages are build-time devDependencies.
+    # Render sets NODE_ENV=production, so explicitly include them during the build.
+    buildCommand: npm ci --include=dev && npm run build -w backend
     startCommand: npm run start -w backend
     healthCheckPath: /api/health
     autoDeploy: true
