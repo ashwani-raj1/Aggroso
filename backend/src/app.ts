@@ -135,17 +135,19 @@ app.post("/api/batches", async (req, res) => {
 app.post("/api/listings/:id/review", async (req, res) => {
   const listing = await prisma.listing.findUnique({ where: { id: req.params.id } });
   if (!listing) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Listing not found", requestId: res.locals.requestId } });
-  if (listing.status === "REVIEWING") {
+  const claimed = await prisma.listing.updateMany({
+    where: { id: listing.id, status: { not: "REVIEWING" } },
+    data: { status: "REVIEWING" }
+  });
+  if (claimed.count === 0) {
     return res.status(409).json({ error: { code: "REVIEW_IN_PROGRESS", message: "A review is already in progress for this listing", requestId: res.locals.requestId } });
   }
   const input = listingInputSchema.parse({ ...listing, price: listing.price.toString(), imageUrl: imageUrlFromAttributes(listing.attributes) });
   const relevantPolicies = retrievePolicies(input);
-  const review = await prisma.$transaction(async (tx) => {
-    await tx.listing.update({ where: { id: listing.id }, data: { status: "REVIEWING" } });
-    return tx.review.create({ data: { listingId: listing.id, status: "RUNNING", deterministicPassed: true, retrievedPolicyCodes: relevantPolicies.map((policy) => policy.code) } });
-  });
+  const review = await prisma.review.create({ data: { listingId: listing.id, status: "RUNNING", deterministicPassed: true, retrievedPolicyCodes: relevantPolicies.map((policy) => policy.code) } });
   req.log?.info({
     event: "ai_review_started",
+    trigger: req.header("x-review-trigger") ?? "manual",
     reviewId: review.id,
     listingId: listing.id,
     policyCodes: relevantPolicies.map((policy) => policy.code)

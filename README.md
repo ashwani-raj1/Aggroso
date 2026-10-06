@@ -142,7 +142,7 @@ sequenceDiagram
     API->>API: Zod validation + normalized duplicate key
     API->>DB: Insert original + LISTING_CREATED audit event
     API-->>UI: Listing status PENDING
-    UI->>API: POST /api/listings/:id/review
+    API->>API: Durable worker claims queued listing
     API->>DB: Set Listing to REVIEWING and Review to RUNNING
     API->>API: Retrieve relevant policies
     API->>AI: Listing + permitted policy sections
@@ -163,7 +163,7 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
     [*] --> PENDING
-    PENDING --> REVIEWING: review requested
+    PENDING --> REVIEWING: background worker claims job
     REVIEWING --> APPROVED: no findings
     REVIEWING --> NEEDS_CHANGES: findings detected
     REVIEWING --> FAILED: provider or parsing error
@@ -200,7 +200,7 @@ sequenceDiagram
     end
 ```
 
-One failed AI review does not stop subsequent batch listings. The dashboard polls only while at least one listing is actively `REVIEWING`; ordinary `PENDING` listings do not create continuous database traffic.
+One failed AI review does not stop subsequent batch listings. New manual and Excel-imported listings are persisted as `PENDING`, then a backend worker automatically claims and reviews them in creation order. Because the queue state lives in PostgreSQL, processing does not depend on an open browser and pending work resumes after a backend restart. The dashboard polls while any listing is `PENDING` or `REVIEWING`, then stops polling when the queue is settled. Manual retry remains available for failed reviews.
 
 ### Finding decisions and finalization
 
@@ -325,7 +325,7 @@ frontend/src/pages/       Dashboard, creation, Excel import, review workbench
 frontend/src/api.ts       API wrapper
 frontend/src/styles.css   Responsive visual system
 backend/src/domain/       Validation, duplicate, policy, and AI schemas
-backend/src/services/     Gemini integration
+backend/src/services/     Gemini integration and durable background review worker
 backend/src/app.ts        REST routes and workflow orchestration
 backend/prisma/           Schema, Supabase bootstrap SQL, and seed
 samples/listings.json     Import-ready sample data
@@ -386,7 +386,7 @@ The first worksheet uses these columns:
 | `POST` | `/api/listings` | Validate and create one listing |
 | `GET` | `/api/listings/:id` | Listing, reviews, revisions, and history |
 | `POST` | `/api/batches` | Create an Excel-derived batch |
-| `POST` | `/api/listings/:id/review` | Run policy retrieval and Gemini review |
+| `POST` | `/api/listings/:id/review` | Manually run or retry policy retrieval and Gemini review (the worker invokes this automatically for new listings) |
 | `POST` | `/api/reviews/:reviewId/findings/:findingId/decisions` | Approve, edit, or reject a finding |
 | `POST` | `/api/reviews/:reviewId/finalize` | Create an immutable revised snapshot |
 

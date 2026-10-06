@@ -8,9 +8,9 @@ export function Dashboard() {
   const listings = useQuery({
     queryKey: ["listings"],
     queryFn: api.listListings,
-    // PENDING listings may wait for a reviewer indefinitely. Poll only while
-    // an evaluation is actively running to avoid constant database traffic.
-    refetchInterval: (query) => query.state.data?.some((item) => item.status === "REVIEWING") ? 2000 : false
+    // The backend processes queued reviews independently of the browser.
+    // Keep the dashboard live while work is queued or actively evaluating.
+    refetchInterval: (query) => query.state.data?.some((item) => ["PENDING", "REVIEWING"].includes(item.status)) ? 2500 : false
   });
   const data = listings.data ?? [];
   const visible = filter === "ALL" ? data : data.filter((item) => item.status === filter);
