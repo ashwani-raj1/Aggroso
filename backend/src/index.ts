@@ -2,6 +2,7 @@ import { app } from "./app.js";
 import { config } from "./config.js";
 import { prisma } from "./db.js";
 import { startBackgroundReviewWorker } from "./services/background-review.js";
+import { ensureSampleCatalog } from "./services/sample-catalog.js";
 
 let server: ReturnType<typeof app.listen> | undefined;
 let stopReviewWorker: (() => void) | undefined;
@@ -9,7 +10,9 @@ let stopReviewWorker: (() => void) | undefined;
 async function start() {
   server = app.listen(config.PORT, () => {
     console.log(`Marketplace reviewer API listening on port ${config.PORT}`);
-    stopReviewWorker = startBackgroundReviewWorker();
+    void ensureSampleCatalog()
+      .catch((error) => console.error("Sample catalog setup failed", error))
+      .finally(() => { stopReviewWorker = startBackgroundReviewWorker(); });
   });
 }
 

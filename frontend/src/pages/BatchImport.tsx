@@ -71,18 +71,8 @@ export function BatchImport() {
 
   const upload = useMutation({
     mutationFn: () => api.createBatch(rows),
-    onSuccess: async (batch) => {
+    onSuccess: async () => {
       navigate("/");
-      void (async () => {
-        for (const listing of batch.listings) {
-          try {
-            await api.reviewListing(listing.id);
-          } catch {
-            // A failed listing is persisted independently and does not stop the batch.
-          }
-          await queryClient.invalidateQueries({ queryKey: ["listings"] });
-        }
-      })();
       await queryClient.invalidateQueries({ queryKey: ["listings"] });
     }
   });
@@ -107,31 +97,14 @@ export function BatchImport() {
     }
   }
 
-  async function downloadTemplate() {
-    setParseError("");
-    const XLSX = await loadXlsx();
-    const sheet = XLSX.utils.json_to_sheet([{
-      title: "Wireless headphones in good condition",
-      description: "Over-ear wireless headphones with charging cable, tested and fully working.",
-      category: "ELECTRONICS",
-      price: "4999.00",
-      seller: "Example Seller",
-      tags: "wireless, audio",
-      imageUrl: "https://example.com/product.jpg",
-      attributes: JSON.stringify({ condition: "Used", color: "Black" })
-    }]);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, sheet, "Listings");
-    XLSX.writeFile(workbook, "marketplace-listing-template.xlsx");
-  }
-
   return <section>
-    <header className="page-header"><div><p className="eyebrow">Batch workspace</p><h1>Import listings from Excel</h1><p>Upload up to 20 listings and monitor each evaluation from the dashboard.</p></div><button className="button" onClick={() => void downloadTemplate().catch((error) => setParseError(error instanceof Error ? error.message : "Could not create the template."))}>Download template</button></header>
+    <header className="page-header"><div><p className="eyebrow">Batch workspace</p><h1>Import listings from Excel</h1><p>Upload up to 20 listings and monitor each evaluation from the dashboard.</p></div><a className="button sample-download" href="/samples/marketplace-sample-listings.xlsx" download><span>↓</span> Download sample Excel</a></header>
     <div className="panel upload-panel">
+      <div className="sample-callout"><div><strong>Need a ready-to-test workbook?</strong><span>Download six complete listings with product images, attributes, tags, and realistic policy-review cases.</span></div><a href="/samples/marketplace-sample-listings.xlsx" download>Download sample</a></div>
       <label className="drop-zone"><input type="file" accept=".xlsx,.xls" onChange={readWorkbook} /><span className="upload-icon">⇧</span><strong>{fileName || "Choose an Excel workbook"}</strong><small>Supported formats: XLSX and XLS · Maximum 20 rows</small></label>
       <div className="column-guide"><strong>Required columns</strong><div>{columns.map((column) => <code key={column}>{column}</code>)}</div></div>
       {parseError && <div className="state error">{parseError}</div>}
-      {rows.length > 0 && <><div className="import-summary"><strong>{rows.length} listings ready</strong><span>All rows will be evaluated after import.</span></div><div className="table-wrap"><table><thead><tr><th>Listing</th><th>Category</th><th>Seller</th><th>Price</th></tr></thead><tbody>{rows.map((row, index) => <tr key={`${row.title}-${index}`}><td><strong>{row.title || "Missing title"}</strong></td><td>{row.category || "—"}</td><td>{row.seller || "—"}</td><td>{row.price ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(Number(row.price)) : "—"}</td></tr>)}</tbody></table></div><div className="form-actions"><button className="button primary" disabled={upload.isPending} onClick={() => upload.mutate()}>{upload.isPending ? "Importing…" : "Import & evaluate"}</button></div></>}
+      {rows.length > 0 && <><div className="import-summary"><strong>{rows.length} listings ready</strong><span>All rows will be evaluated after import.</span></div><div className="table-wrap"><table><thead><tr><th>Image</th><th>Listing</th><th>Category</th><th>Seller</th><th>Price</th></tr></thead><tbody>{rows.map((row, index) => <tr key={`${row.title}-${index}`}><td>{row.imageUrl ? <img className="import-thumb" src={row.imageUrl} alt="" /> : <span className="no-image">—</span>}</td><td><strong>{row.title || "Missing title"}</strong></td><td>{row.category || "—"}</td><td>{row.seller || "—"}</td><td>{row.price ? new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(Number(row.price)) : "—"}</td></tr>)}</tbody></table></div><div className="form-actions"><button className="button primary" disabled={upload.isPending} onClick={() => upload.mutate()}>{upload.isPending ? "Importing…" : "Import & evaluate"}</button></div></>}
       {upload.isError && <div className="state error">{upload.error.message}</div>}
     </div>
   </section>;

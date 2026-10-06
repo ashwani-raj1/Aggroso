@@ -33,13 +33,21 @@ async function main() {
   }
 
   let createdSamples = 0;
+  let updatedSamples = 0;
   for (const listing of sampleListings) {
     const normalizedKey = normalizedListingKey(listing);
     const existing = await prisma.listing.findFirst({ where: { normalizedKey }, select: { id: true } });
-    if (existing) continue;
+    const { imageUrl, ...listingData } = listing;
+    const attributes = { ...listing.attributes, ...(imageUrl ? { __imageUrl: imageUrl } : {}) };
+    if (existing) {
+      await prisma.listing.update({ where: { id: existing.id }, data: { attributes } });
+      updatedSamples += 1;
+      continue;
+    }
     await prisma.listing.create({
       data: {
-        ...listing,
+        ...listingData,
+        attributes,
         price: listing.price,
         normalizedKey,
         auditLogs: { create: { action: "SAMPLE_LISTING_CREATED", metadata: { source: "seed" } } }
@@ -47,7 +55,7 @@ async function main() {
     });
     createdSamples += 1;
   }
-  console.log(`Created ${createdSamples} sample listings.`);
+  console.log(`Created ${createdSamples} and refreshed ${updatedSamples} sample listings.`);
 }
 
 main()

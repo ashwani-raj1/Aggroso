@@ -72,6 +72,8 @@ The demo covers the system architecture, repository structure, dashboard, manual
 
 The dashboard summarizes the complete queue and provides filters for `PENDING`, `REVIEWING` (shown as **Evaluating**), `NEEDS_CHANGES`, `APPROVED`, and `FAILED`.
 
+The demo catalog contains ten realistic listings across all supported categories. Every sample includes an image, tags, structured attributes, INR pricing, and a mix of compliant and intentionally questionable claims. The catalog is refreshed idempotently when the backend starts, so existing seeded rows receive the latest image metadata without duplicating listings.
+
 ### 2. Manual listing intake
 
 ![Manual listing form with INR price and image upload](docs/screenshots/create-listing.png)
@@ -201,6 +203,8 @@ sequenceDiagram
 ```
 
 One failed AI review does not stop subsequent batch listings. New manual and Excel-imported listings are persisted as `PENDING`, then a backend worker automatically claims and reviews them in creation order. Because the queue state lives in PostgreSQL, processing does not depend on an open browser and pending work resumes after a backend restart. The dashboard polls while any listing is `PENDING` or `REVIEWING`, then stops polling when the queue is settled. Manual retry remains available for failed reviews.
+
+The Excel import screen includes a direct download of [`marketplace-sample-listings.xlsx`](frontend/public/samples/marketplace-sample-listings.xlsx). It contains six additional, import-ready rows with all required fields, public image URLs, comma-separated tags, and JSON attributes. These rows are intentionally distinct from the startup demo catalog, so reviewers can download and immediately upload the workbook without duplicate conflicts.
 
 ### Finding decisions and finalization
 
