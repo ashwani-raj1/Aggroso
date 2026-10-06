@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api";
 import type { ListingInput } from "../types";
@@ -38,6 +38,7 @@ export function NewListing() {
   const [tags, setTags] = useState("");
   const [imageError, setImageError] = useState("");
   const [processingImage, setProcessingImage] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const create = useMutation({
@@ -48,9 +49,23 @@ export function NewListing() {
     }
   });
 
+  const preparedListing = useMemo(() => ({
+    ...form,
+    imageUrl: form.imageUrl || undefined,
+    tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean)
+  }), [form, tags]);
+
+  useEffect(() => {
+    if (!showReview) return;
+    const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape" && !create.isPending) setShowReview(false); };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    return () => { document.body.style.overflow = ""; window.removeEventListener("keydown", closeOnEscape); };
+  }, [showReview, create.isPending]);
+
   function submit(event: FormEvent) {
     event.preventDefault();
-    create.mutate({ ...form, imageUrl: form.imageUrl || undefined, tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean) });
+    setShowReview(true);
   }
 
   async function selectImage(event: ChangeEvent<HTMLInputElement>) {
@@ -87,6 +102,23 @@ export function NewListing() {
         {create.isError && <div className="state error">{create.error.message}</div>}
         <div className="form-actions"><button className="button primary" disabled={create.isPending}>{create.isPending ? "Saving…" : "Save listing"}</button></div>
       </form>
+      {showReview && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !create.isPending) setShowReview(false); }}>
+        <section className="review-modal" role="dialog" aria-modal="true" aria-labelledby="review-listing-title">
+          <div className="modal-heading"><div><p className="eyebrow">Final confirmation</p><h2 id="review-listing-title">Review listing details</h2><p>Check the seller content before it enters the automated policy review.</p></div><button className="modal-close" type="button" aria-label="Close review" disabled={create.isPending} onClick={() => setShowReview(false)}>×</button></div>
+          <div className="review-preview">
+            {preparedListing.imageUrl ? <img src={preparedListing.imageUrl} alt={preparedListing.title} /> : <div className="review-image-empty">No image</div>}
+            <div><span className="review-category">{preparedListing.category.replaceAll("_", " ")}</span><h3>{preparedListing.title}</h3><p>{preparedListing.description}</p></div>
+          </div>
+          <div className="review-facts">
+            <div><span>Price</span><strong>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(Number(preparedListing.price))}</strong></div>
+            <div><span>Seller</span><strong>{preparedListing.seller}</strong></div>
+            <div><span>Tags</span><strong>{preparedListing.tags.length ? preparedListing.tags.join(", ") : "None"}</strong></div>
+          </div>
+          <div className="review-notice"><span>✦</span><div><strong>Gemini review starts automatically</strong><p>After submission, the backend checks policies and updates the listing even if you close this page.</p></div></div>
+          {create.isError && <div className="state error">{create.error.message}</div>}
+          <div className="modal-actions"><button className="button" type="button" disabled={create.isPending} onClick={() => setShowReview(false)}>Back to edit</button><button className="button primary" type="button" disabled={create.isPending} onClick={() => create.mutate(preparedListing)}>{create.isPending ? "Submitting…" : "Submit for AI review"}</button></div>
+        </section>
+      </div>}
     </section>
   );
 }

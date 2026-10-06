@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api";
 import type { Finding } from "../types";
@@ -29,7 +29,6 @@ function FindingCard({ finding, reviewId, onSaved }: { finding: Finding; reviewI
 export function ListingDetail() {
   const { id = "" } = useParams();
   const queryClient = useQueryClient();
-  const autoReviewStarted = useRef(false);
   const listing = useQuery({
     queryKey: ["listing", id],
     queryFn: () => api.getListing(id),
@@ -39,16 +38,11 @@ export function ListingDetail() {
   const review = useMutation({ mutationFn: () => api.reviewListing(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["listing", id] }) });
   const finalize = useMutation({ mutationFn: (reviewId: string) => api.finalizeReview(reviewId), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["listing", id] }) });
 
-  useEffect(() => {
-    if (listing.data?.status !== "PENDING" || autoReviewStarted.current || review.isPending) return;
-    autoReviewStarted.current = true;
-    review.mutate();
-  }, [listing.data?.status, review.isPending]);
-
   if (listing.isLoading) return <div className="state">Loading listing…</div>;
   if (listing.isError || !listing.data) return <div className="state error">Could not load this listing.</div>;
   const item = listing.data;
   const latestReview = item.reviews.at(-1);
+  const productAttributes = Object.entries(item.attributes).filter(([key]) => key !== "__imageUrl");
 
   return (
     <section>
@@ -60,7 +54,7 @@ export function ListingDetail() {
       {review.isError && <div className="state error">Review failed: {review.error.message}</div>}
       {review.isSuccess && <div className="state success">Review completed and findings were saved.</div>}
       <div className="detail-grid">
-        <article className="panel"><div className="panel-heading"><h2>Original listing</h2><span className={`status status-${item.status.toLowerCase()}`}>{item.status === "REVIEWING" ? "EVALUATING" : item.status.replaceAll("_", " ")}</span></div>{item.imageUrl && <img className="listing-image" src={item.imageUrl} alt={item.title} />}<dl><dt>Description</dt><dd>{item.description}</dd><dt>Price</dt><dd>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(Number(item.price))}</dd><dt>Tags</dt><dd>{item.tags.length ? item.tags.join(", ") : "None"}</dd></dl></article>
+        <article className="panel"><div className="panel-heading"><h2>Original listing</h2><span className={`status status-${item.status.toLowerCase()}`}>{item.status === "REVIEWING" ? "EVALUATING" : item.status.replaceAll("_", " ")}</span></div>{item.imageUrl && <img className="listing-image" src={item.imageUrl} alt={item.title} />}<dl><dt>Description</dt><dd>{item.description}</dd></dl><div className="product-summary"><div><span>Price</span><strong>{new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR" }).format(Number(item.price))}</strong></div><div><span>Category</span><strong>{item.category.replaceAll("_", " ")}</strong></div><div><span>Seller</span><strong>{item.seller}</strong></div><div><span>Submitted</span><strong>{new Date(item.createdAt).toLocaleString("en-IN")}</strong></div></div><div className="product-section"><h3>Product information</h3>{productAttributes.length ? <div className="attribute-grid">{productAttributes.map(([key, value]) => <div key={key}><span>{key.replaceAll("_", " ")}</span><strong>{value}</strong></div>)}</div> : <p className="muted-copy">No additional product specifications were provided.</p>}</div><div className="product-section"><h3>Tags</h3><div className="tag-list">{item.tags.length ? item.tags.map((tag) => <span key={tag}>{tag}</span>) : <span>None</span>}</div></div></article>
         <article className="panel"><div className="panel-heading"><h2>Review activity</h2></div>{item.reviews?.length ? <div className="timeline">{item.reviews.map((entry) => <div key={entry.id}><span className="timeline-dot"/><div><strong>{entry.status}</strong><p>{new Date(entry.createdAt).toLocaleString()}</p></div></div>)}</div> : <div className="empty compact"><h3>Not reviewed yet</h3><p>Run the AI review to retrieve relevant policies and generate findings.</p></div>}</article>
       </div>
       <div className="panel findings-panel">
