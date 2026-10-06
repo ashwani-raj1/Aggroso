@@ -69,7 +69,7 @@ GitHub does not reliably embed an MP4/audio player inside README files. The GIF 
 
 </details>
 
-The walkthrough covers the architecture, repository, validation, policy-grounded Gemini review, human decisions, audit history, and Excel workflow. The final screenshots and diagrams below additionally document background processing, form confirmation, expanded product facts, image-backed samples, and deletion.
+The refreshed walkthrough covers the current dashboard, confirmed manual entry, Excel batch import, background processing, policy-grounded Gemini findings, human decisions, expanded product facts, audited finalization, and guarded deletion.
 
 ## Screenshots
 
