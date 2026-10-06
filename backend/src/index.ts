@@ -6,7 +6,7 @@ let server: ReturnType<typeof app.listen> | undefined;
 
 async function start() {
   server = app.listen(config.PORT, () => {
-    console.log(`Marketplace reviewer API listening on http://localhost:${config.PORT}`);
+    console.log(`Marketplace reviewer API listening on port ${config.PORT}`);
   });
 }
 
