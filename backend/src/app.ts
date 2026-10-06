@@ -33,9 +33,11 @@ function listingCreateData(input: z.infer<typeof listingInputSchema>) {
   };
 }
 
-const configuredOrigins = new Set(
-  config.CLIENT_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean)
-);
+const productionOrigins = ["https://aggroso-azure.vercel.app"];
+const configuredOrigins = new Set([
+  ...config.CLIENT_ORIGIN.split(",").map((origin) => origin.trim()).filter(Boolean),
+  ...productionOrigins
+]);
 
 function isAllowedOrigin(origin: string) {
   if (configuredOrigins.has(origin)) return true;
