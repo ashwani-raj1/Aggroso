@@ -20,6 +20,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   listListings: () => request<Listing[]>("/listings"),
   getListing: (id: string) => request<ListingDetail>(`/listings/${id}`),
+  deleteListing: (id: string) => request<{ id: string; deleted: boolean }>(`/listings/${id}`, { method: "DELETE" }),
   createListing: (listing: ListingInput) => request<Listing>("/listings", { method: "POST", body: JSON.stringify(listing) }),
   createBatch: (listings: ListingInput[]) => request<{ id: string; listings: Listing[] }>("/batches", { method: "POST", body: JSON.stringify({ listings }) }),
   reviewListing: (id: string) => request(`/listings/${id}/review`, { method: "POST" }),

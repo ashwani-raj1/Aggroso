@@ -391,6 +391,7 @@ The first worksheet uses these columns:
 | `GET` | `/api/listings/:id` | Listing, reviews, revisions, and history |
 | `POST` | `/api/batches` | Create an Excel-derived batch |
 | `POST` | `/api/listings/:id/review` | Manually run or retry policy retrieval and Gemini review (the worker invokes this automatically for new listings) |
+| `DELETE` | `/api/listings/:id` | Delete a settled listing and its dependent review data while preserving a deletion audit event |
 | `POST` | `/api/reviews/:reviewId/findings/:findingId/decisions` | Approve, edit, or reject a finding |
 | `POST` | `/api/reviews/:reviewId/finalize` | Create an immutable revised snapshot |
 

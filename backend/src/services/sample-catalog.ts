@@ -13,6 +13,11 @@ export async function ensureSampleCatalog() {
     const normalizedKey = normalizedListingKey(listing);
     const { imageUrl, ...listingData } = listing;
     const attributes = { ...listing.attributes, ...(imageUrl ? { __imageUrl: imageUrl } : {}) };
+    const wasDeleted = await prisma.auditLog.findFirst({
+      where: { action: "LISTING_DELETED", metadata: { path: ["normalizedKey"], equals: normalizedKey } },
+      select: { id: true }
+    });
+    if (wasDeleted) continue;
     const existing = await prisma.listing.findFirst({ where: { normalizedKey }, select: { id: true } });
 
     if (existing) {

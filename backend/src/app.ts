@@ -103,6 +103,30 @@ app.get("/api/listings/:id", async (req, res) => {
   res.json({ data: { ...withImageUrl(listing), revisions: listing.revisions.map(withImageUrl) } });
 });
 
+app.delete("/api/listings/:id", async (req, res) => {
+  const listing = await prisma.listing.findUnique({
+    where: { id: req.params.id },
+    select: { id: true, title: true, normalizedKey: true, status: true }
+  });
+  if (!listing) return res.status(404).json({ error: { code: "NOT_FOUND", message: "Listing not found", requestId: res.locals.requestId } });
+  if (listing.status === "REVIEWING") {
+    return res.status(409).json({ error: { code: "REVIEW_IN_PROGRESS", message: "Wait for the active AI review to finish before deleting this listing.", requestId: res.locals.requestId } });
+  }
+
+  const deleted = await prisma.$transaction(async (tx) => {
+    const result = await tx.listing.deleteMany({ where: { id: listing.id, status: { not: "REVIEWING" } } });
+    if (result.count === 0) return false;
+    await tx.auditLog.create({
+      data: { action: "LISTING_DELETED", metadata: { listingId: listing.id, title: listing.title, normalizedKey: listing.normalizedKey } }
+    });
+    return true;
+  });
+  if (!deleted) return res.status(409).json({ error: { code: "REVIEW_IN_PROGRESS", message: "The AI review started before deletion. Wait for it to finish and retry.", requestId: res.locals.requestId } });
+
+  req.log?.info({ event: "listing_deleted", listingId: listing.id });
+  res.json({ data: { id: listing.id, deleted: true } });
+});
+
 app.post("/api/listings", async (req, res) => {
   const input = listingInputSchema.parse(req.body);
   const normalizedKey = normalizedListingKey(input);

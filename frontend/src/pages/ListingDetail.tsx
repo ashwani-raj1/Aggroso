@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api";
 import type { Finding } from "../types";
 
@@ -28,7 +28,9 @@ function FindingCard({ finding, reviewId, onSaved }: { finding: Finding; reviewI
 
 export function ListingDetail() {
   const { id = "" } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [showDelete, setShowDelete] = useState(false);
   const listing = useQuery({
     queryKey: ["listing", id],
     queryFn: () => api.getListing(id),
@@ -37,6 +39,14 @@ export function ListingDetail() {
   });
   const review = useMutation({ mutationFn: () => api.reviewListing(id), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["listing", id] }) });
   const finalize = useMutation({ mutationFn: (reviewId: string) => api.finalizeReview(reviewId), onSuccess: () => queryClient.invalidateQueries({ queryKey: ["listing", id] }) });
+  const remove = useMutation({
+    mutationFn: () => api.deleteListing(id),
+    onSuccess: async () => {
+      queryClient.removeQueries({ queryKey: ["listing", id] });
+      await queryClient.invalidateQueries({ queryKey: ["listings"] });
+      navigate("/", { replace: true });
+    }
+  });
 
   if (listing.isLoading) return <div className="state">Loading listing…</div>;
   if (listing.isError || !listing.data) return <div className="state error">Could not load this listing.</div>;
@@ -49,7 +59,7 @@ export function ListingDetail() {
       <Link className="back" to="/">← Back to dashboard</Link>
       <header className="page-header">
         <div><p className="eyebrow">Listing review</p><h1>{item.title}</h1><p>{item.category.replaceAll("_", " ")} · Submitted by {item.seller}</p></div>
-        <button className="button primary" onClick={() => review.mutate()} disabled={review.isPending || item.status === "REVIEWING"}>{review.isPending || item.status === "REVIEWING" ? "Reviewing…" : item.status === "FAILED" ? "Retry AI review" : "Run AI review"}</button>
+        <div className="header-actions"><button className="button danger delete-button" onClick={() => setShowDelete(true)} disabled={item.status === "REVIEWING"}>Delete listing</button><button className="button primary" onClick={() => review.mutate()} disabled={review.isPending || item.status === "REVIEWING"}>{review.isPending || item.status === "REVIEWING" ? "Reviewing…" : item.status === "FAILED" ? "Retry AI review" : "Run AI review"}</button></div>
       </header>
       {review.isError && <div className="state error">Review failed: {review.error.message}</div>}
       {review.isSuccess && <div className="state success">Review completed and findings were saved.</div>}
@@ -65,6 +75,7 @@ export function ListingDetail() {
         <div className="findings-list">{latestReview?.findings.map((finding) => <FindingCard key={finding.id} finding={finding} reviewId={latestReview.id} onSaved={() => queryClient.invalidateQueries({ queryKey: ["listing", id] })} />)}</div>
         {latestReview?.status === "COMPLETED" && latestReview.findings.length > 0 && <div className="finalize-row"><button className="button primary" disabled={finalize.isPending || latestReview.findings.some((finding) => finding.decisions.length === 0)} onClick={() => finalize.mutate(latestReview.id)}>{finalize.isPending ? "Finalizing…" : "Finalize reviewed listing"}</button>{finalize.isError && <span className="inline-error">{finalize.error.message}</span>}</div>}
       </div>
+      {showDelete && <div className="modal-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget && !remove.isPending) setShowDelete(false); }}><section className="review-modal delete-modal" role="alertdialog" aria-modal="true" aria-labelledby="delete-listing-title"><div className="delete-icon">!</div><h2 id="delete-listing-title">Delete this listing?</h2><p><strong>{item.title}</strong> and its reviews, findings, decisions, and revisions will be permanently removed. A minimal deletion event remains in the audit log.</p>{remove.isError && <div className="state error">{remove.error.message}</div>}<div className="modal-actions"><button className="button" disabled={remove.isPending} onClick={() => setShowDelete(false)}>Cancel</button><button className="button danger solid-danger" disabled={remove.isPending} onClick={() => remove.mutate()}>{remove.isPending ? "Deleting…" : "Delete permanently"}</button></div></section></div>}
     </section>
   );
 }
