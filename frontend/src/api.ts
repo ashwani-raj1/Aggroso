@@ -12,8 +12,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: { "content-type": "application/json", ...init?.headers }
   });
-  const body = await response.json();
-  if (!response.ok) throw new Error(body.error?.message ?? "Request failed");
+  const contentType = response.headers.get("content-type") ?? "";
+  const body = contentType.includes("application/json")
+    ? await response.json()
+    : null;
+
+  if (!response.ok) {
+    if (body?.error?.message) throw new Error(body.error.message);
+    if (response.status === 404 && init?.method === "DELETE") {
+      throw new Error("Delete API is not available on the deployed backend yet. Redeploy the latest backend commit and retry.");
+    }
+    throw new Error(`API request failed (${response.status}). Please retry or check the backend deployment.`);
+  }
+
+  if (body === null) {
+    throw new Error("The API returned an unexpected non-JSON response. Check the configured backend URL.");
+  }
   return body.data ?? body;
 }
 
