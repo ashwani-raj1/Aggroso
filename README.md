@@ -1,136 +1,149 @@
+<p align="center"><img src="docs/assets/readme-hero.svg" alt="Marketplace Listing Quality Reviewer" width="100%" /></p>
+
 <p align="center">
-  <img src="docs/assets/readme-hero.svg" alt="Marketplace Listing Quality Reviewer" width="100%" />
+  <a href="https://aggroso-azure.vercel.app"><strong>Live application</strong></a> ·
+  <a href="https://aggroso-pn34.onrender.com/api/health"><strong>API health</strong></a> ·
+  <a href="frontend/public/samples/marketplace-sample-listings.xlsx"><strong>Sample Excel workbook</strong></a>
 </p>
 
 <p align="center">
   <img alt="React" src="https://img.shields.io/badge/React-19-149eca?logo=react&logoColor=white" />
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.8-3178c6?logo=typescript&logoColor=white" />
   <img alt="Express" src="https://img.shields.io/badge/Express-5-1f2937?logo=express&logoColor=white" />
-  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-Supabase-3ecf8e?logo=supabase&logoColor=white" />
+  <img alt="Supabase" src="https://img.shields.io/badge/PostgreSQL-Supabase-3ecf8e?logo=supabase&logoColor=white" />
   <img alt="Gemini" src="https://img.shields.io/badge/AI-Gemini-8e75ff?logo=googlegemini&logoColor=white" />
-  <img alt="Human reviewed" src="https://img.shields.io/badge/AI_actions-Human_reviewed-167a55" />
+  <img alt="Tests" src="https://img.shields.io/badge/tests-14%20passing-167a55" />
 </p>
 
 # Marketplace Listing Quality Reviewer
 
-A human-in-the-loop application that validates marketplace listings, retrieves relevant policy guidance, generates cited AI findings, and lets reviewers approve, edit, or reject suggested revisions.
+A deployed human-in-the-loop workbench that checks marketplace listings with deterministic rules, retrieves relevant policy guidance, generates cited Gemini findings, and leaves every proposed revision under reviewer control.
 
-> **Submission scope:** one bounded marketplace policy set, six supported categories, manual entry, and Excel batches of up to 20 records. AI output is advisory and never changes a listing without human approval.
+> **Bounded scope:** one marketplace, six supported categories, manual entry, and Excel batches of up to 20 rows. Publishing, payments, seller verification, unrestricted categories, and image moderation are intentionally excluded.
 
-## Documentation map
+## Contents
 
-- [Product screenshots](#product-screenshots)
-- [Project walkthrough video](#project-walkthrough-video)
+- [Features](#features)
+- [Walkthrough](#walkthrough)
+- [Screenshots](#screenshots)
 - [Architecture](#architecture)
-- [End-to-end workflows](#end-to-end-workflows)
-- [Deterministic rules](#deterministic-rules)
-- [AI workflow and guardrails](#ai-workflow-and-guardrails)
+- [Workflows](#workflows)
+- [AI guardrails](#ai-guardrails)
 - [Data model](#data-model)
-- [Local setup](#local-setup)
-- [Excel import format](#excel-import-format)
-- [API guide](#api-guide)
-- [Tests](#tests)
+- [Setup](#setup)
+- [Excel import](#excel-import)
+- [API](#api)
+- [Testing and logs](#testing-and-logs)
 - [Deployment](#deployment)
-- [Troubleshooting](#troubleshooting)
+- [Limitations and security](#limitations-and-security)
 
-## At a glance
+## Features
 
-| Input | Automated checks | AI output | Human control | Evidence |
-| --- | --- | --- | --- | --- |
-| Manual form or Excel | Required fields, price, category, lengths, duplicates | Cited, severity-ranked findings and proposed wording | Approve, edit, reject, finalize | Original, attempts, decisions, revisions, audit log |
+| Area | Final behaviour |
+| --- | --- |
+| Intake | Manual form, local image upload or URL, INR price, tags, validation, and review-before-submit modal |
+| Batch | `.xlsx`/`.xls` parsing, preview with images, 20-row limit, duplicate protection, downloadable sample workbook |
+| Deterministic checks | Required fields, price, category allowlist, lengths, tag limits, and normalized duplicate detection |
+| AI review | Relevant policy retrieval, structured Gemini output, evidence, severity, cited policy code, suggested wording |
+| Background work | PostgreSQL-backed `PENDING` queue processed by Express after the browser closes |
+| Human control | Approve, edit, or reject every finding before creating an immutable revised snapshot |
+| Operations | Live Pending, Evaluating, Needs Changes, Approved, and Failed dashboard states |
+| History | Original record, attempts, raw AI output, findings, decisions, revisions, failures, retries, and audit events |
+| Deletion | Confirmation dialog, active-review protection, cascade cleanup, and retained deletion audit tombstone |
+| Demo content | Ten image-backed seeded samples and six different Excel-import examples |
 
-## Project walkthrough video
+## Walkthrough
+
+<p align="center"><a href="docs/video/project-walkthrough.mp4"><img src="docs/video/project-walkthrough-play.png" alt="Open narrated walkthrough" width="100%" /></a></p>
 
 <p align="center">
-  <a href="docs/video/project-walkthrough.mp4">
-    <img src="docs/video/project-walkthrough-play.png" alt="Play the narrated Marketplace Listing Quality Reviewer walkthrough" width="100%" />
-  </a>
+  <a href="docs/video/project-walkthrough.mp4"><strong>▶ Open narrated MP4</strong></a> ·
+  <a href="docs/video/project-walkthrough-audio.mp3"><strong>🔊 Open narration</strong></a>
 </p>
 
-<p align="center">
-  <a href="docs/video/project-walkthrough.mp4"><strong>▶ Watch narrated video</strong></a>
-  &nbsp;&nbsp;•&nbsp;&nbsp;
-  <a href="docs/video/project-walkthrough-audio.mp3"><strong>🔊 Listen to audio narration</strong></a>
-</p>
+GitHub does not reliably embed an MP4/audio player inside README files. The GIF below plays directly on the page; the linked 1280×720 MP4 includes narration.
 
-Click the preview or **Watch narrated video** to open the complete 1280×720 MP4 with audio and smooth transitions. **Listen to audio narration** opens the same 99-second narration as an MP3.
+<details><summary><strong>Play inline animated preview</strong></summary>
 
-<details>
-<summary><strong>Show the silent autoplay preview inside GitHub</strong></summary>
-
-![Autoplay preview of the complete Marketplace Listing Quality Reviewer walkthrough](docs/video/project-walkthrough.gif)
+![Animated project walkthrough](docs/video/project-walkthrough.gif)
 
 </details>
 
-The demo covers the system architecture, repository structure, dashboard, manual listing entry, deterministic checks, policy retrieval, Gemini structured evaluation, citation guardrails, reviewer decision pop-ups, immutable revision creation, audit history, and Excel batch import. All stages are labeled visually; the MP4 includes offline-generated English narration. The reproducible [`storyboard.html`](docs/video/storyboard.html) and [`narration.txt`](docs/video/narration.txt) are included with the project.
+The walkthrough covers the architecture, repository, validation, policy-grounded Gemini review, human decisions, audit history, and Excel workflow. The final screenshots and diagrams below additionally document background processing, form confirmation, expanded product facts, image-backed samples, and deletion.
 
-## Product screenshots
+## Screenshots
 
-### 1. Operations dashboard
+### Operations dashboard
 
-![Dashboard showing seeded listings and review statuses](docs/screenshots/dashboard.png)
+![Dashboard with image-backed listings and completed background reviews](docs/screenshots/dashboard-final.png)
 
-The dashboard summarizes the complete queue and provides filters for `PENDING`, `REVIEWING` (shown as **Evaluating**), `NEEDS_CHANGES`, `APPROVED`, and `FAILED`.
+The dashboard reads persisted server state. It polls only while records are queued or evaluating.
 
-The demo catalog contains ten realistic listings across all supported categories. Every sample includes an image, tags, structured attributes, INR pricing, and a mix of compliant and intentionally questionable claims. The catalog is refreshed idempotently when the backend starts, so existing seeded rows receive the latest image metadata without duplicating listings.
+### Manual intake
 
-### 2. Manual listing intake
+![Manual listing form](docs/screenshots/create-final.png)
 
-![Manual listing form with INR price and image upload](docs/screenshots/create-listing.png)
+**Save listing** first opens a review-details modal. No database record is created until the reviewer confirms **Submit for AI review**.
 
-Manual entry supports the required marketplace fields, INR pricing, tags, an image URL, or an image selected from the reviewer’s computer.
+### Excel intake
 
-### 3. Excel batch intake
+![Excel import page with sample download](docs/screenshots/excel-final.png)
 
-![Excel batch import workspace](docs/screenshots/excel-import.png)
+The page includes a ready-to-upload workbook with complete product data, image URLs, tags, and JSON attributes.
 
-The batch workspace provides a downloadable template, validates the first worksheet, previews parsed rows, and limits each batch to 20 listings.
+### Product and review workbench
 
-### 4. Human review workbench
+![Listing details with product facts, review activity, and delete action](docs/screenshots/detail-final.png)
 
-![Review workbench showing a cited policy finding](docs/screenshots/review-workbench.png)
-
-The workbench shows the immutable source listing, review history, severity, evidence, exact policy code, suggested wording when available, and reviewer decision controls.
+The detail view displays the source image and copy, price, category, seller, submission time, attributes, tags, review history, findings, decisions, and guarded deletion.
 
 ### Product journey
 
-![Five-stage listing review journey](docs/assets/review-workflow.svg)
-
-## Stack
-
-- React, Vite, and TypeScript
-- Express and TypeScript
-- PostgreSQL and Prisma
-- Zod validation
-- Gemini 3.5 Flash Lite structured JSON output
-- Vitest and Supertest
-
-| Frontend | Backend | Data and AI | Quality |
-| --- | --- | --- | --- |
-| React, Vite, TanStack Query, React Router | Express, Zod, Pino | Prisma, PostgreSQL, Gemini | TypeScript, Vitest, Supertest |
+![Final product journey](docs/assets/review-workflow.svg)
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    U[Reviewer] --> F[React + Vite]
-    F -->|REST JSON| E[Express API]
-    E --> Z[Zod validation]
-    Z --> D[Deterministic checks]
-    D --> P[Policy retrieval]
-    P --> G[Gemini structured review]
-    G --> C[Citation guardrails]
-    C -->|Persist review + findings| DB[(Supabase PostgreSQL)]
-    F -->|Approve / edit / reject| E
-    E --> R[Decision + revision workflow]
-    R -->|Append decisions + snapshot| DB
+    Reviewer[Reviewer] --> UI[React and Vite]
+    UI -->|REST JSON| API[Express API]
+    API --> Validate[Zod and deterministic checks]
+    Validate --> DB[(Supabase PostgreSQL)]
+    DB -->|Pending rows| Worker[Background worker]
+    Worker --> Retrieve[Policy retriever]
+    Retrieve --> Gemini[Gemini structured review]
+    Gemini --> Guard[Schema and citation guardrails]
+    Guard --> DB
+    UI -->|Decisions and finalization| API
+    API --> DB
 ```
 
-The backend follows a small layered design: routes coordinate the workflow, domain modules contain pure validation and policy logic, the Gemini service owns provider communication, Prisma persists workflow state, and middleware normalizes errors. Every request receives an `x-request-id` that also appears in structured Pino logs.
+The API owns all durable state transitions. Closing the browser does not cancel work because queue state, attempts, findings, failures, and decisions are stored in PostgreSQL. Every request receives an `x-request-id`; workflow events use structured Pino JSON logs.
 
-## End-to-end workflows
+### Stack
 
-### Listing review
+| Frontend | Backend | Data and AI | Quality and hosting |
+| --- | --- | --- | --- |
+| React 19, Vite, TypeScript, TanStack Query, React Router | Express 5, Zod, Pino | Prisma, PostgreSQL, Gemini | Vitest, Supertest, Vercel, Render, Supabase |
+
+### Repository structure
+
+```text
+frontend/src/pages/       Dashboard, form, Excel import, review workbench
+frontend/src/api.ts       Browser API wrapper
+frontend/src/styles.css   Responsive UI and confirmation dialogs
+frontend/public/samples/  Downloadable Excel workbook
+backend/src/domain/       Rules, policy retrieval, AI schemas, samples
+backend/src/services/     Gemini client, worker, sample bootstrap
+backend/src/app.ts        REST routes and workflow transitions
+backend/prisma/           Prisma schema, SQL bootstrap, seed
+docs/                     Screenshots, diagrams, walkthrough media
+samples/                  JSON reviewer fixtures
+```
+
+## Workflows
+
+### Manual creation and automatic AI review
 
 ```mermaid
 sequenceDiagram
@@ -138,46 +151,34 @@ sequenceDiagram
     participant UI as React UI
     participant API as Express API
     participant DB as PostgreSQL
+    participant Worker as Review worker
     participant AI as Gemini
-    Reviewer->>UI: Enter listing
+    Reviewer->>UI: Complete form and choose Save
+    UI-->>Reviewer: Review-details confirmation
+    Reviewer->>UI: Submit for AI review
     UI->>API: POST /api/listings
-    API->>API: Zod validation + normalized duplicate key
-    API->>DB: Insert original + LISTING_CREATED audit event
-    API-->>UI: Listing status PENDING
-    API->>API: Durable worker claims queued listing
-    API->>DB: Set Listing to REVIEWING and Review to RUNNING
-    API->>API: Retrieve relevant policies
-    API->>AI: Listing + permitted policy sections
-    AI-->>API: Structured findings
-    API->>API: Validate JSON and citations
-    alt Findings returned
-        API->>DB: Set Review to COMPLETED and Listing to NEEDS_CHANGES
+    API->>API: Validate and check duplicate key
+    API->>DB: Create PENDING listing and audit event
+    API-->>UI: Return listing
+    Worker->>DB: Claim oldest PENDING listing
+    Worker->>DB: Set Listing REVIEWING and Review RUNNING
+    Worker->>AI: Listing and permitted policies
+    AI-->>Worker: Structured findings
+    Worker->>Worker: Validate JSON and citations
+    alt Findings exist
+        Worker->>DB: Save findings and set NEEDS_CHANGES
     else No findings
-        API->>DB: Set Review to COMPLETED and Listing to APPROVED
-    else Provider or parsing failure
-        API->>DB: Set Review to FAILED and Listing to FAILED
+        Worker->>DB: Complete review and set APPROVED
+    else Provider failure
+        Worker->>DB: Save failure and set FAILED
     end
-    API-->>UI: Persisted review result
+    UI->>API: Poll while queued or evaluating
+    API-->>UI: Persisted current state
 ```
 
-### Human approval lifecycle
+The worker is sequential to limit provider pressure. On startup, reviews left `RUNNING` for more than ten minutes are failed and their listings are requeued.
 
-```mermaid
-stateDiagram-v2
-    [*] --> PENDING
-    PENDING --> REVIEWING: background worker claims job
-    REVIEWING --> APPROVED: no findings
-    REVIEWING --> NEEDS_CHANGES: findings detected
-    REVIEWING --> FAILED: provider or parsing error
-    FAILED --> REVIEWING: retry
-    NEEDS_CHANGES --> NEEDS_CHANGES: approve / edit / reject findings
-    NEEDS_CHANGES --> APPROVED: finalize revision
-    APPROVED --> [*]
-```
-
-Finalization creates an immutable `RevisedListing`; it never overwrites the original. Review attempts, raw AI output, findings, decisions, failures, revisions, and audit events remain available for traceability.
-
-### Batch processing
+### Excel batch
 
 ```mermaid
 sequenceDiagram
@@ -185,256 +186,274 @@ sequenceDiagram
     participant UI as Excel workspace
     participant API as Express API
     participant DB as PostgreSQL
-    participant AI as Gemini
-    Reviewer->>UI: Select XLSX / XLS file
-    UI->>UI: Parse first sheet and preview 1–20 rows
+    participant Worker as Review worker
+    Reviewer->>UI: Download or select workbook
+    UI->>UI: Parse and preview 1 to 20 rows
+    Reviewer->>UI: Import and evaluate
     UI->>API: POST /api/batches
-    API->>API: Validate records + within-batch duplicates
-    API->>DB: Check persisted duplicate keys
-    API->>DB: Create Batch + Listings transaction
-    API-->>UI: Created batch and listings
-    UI->>UI: Return immediately to dashboard
-    loop Each listing, sequentially
-        UI->>API: POST /api/listings/:id/review
-        API->>AI: Grounded review
-        API->>DB: Persist independent result or failure
-        UI->>API: Refresh dashboard listings
+    API->>API: Validate rows and duplicates
+    API->>DB: Create Batch and PENDING Listings
+    API-->>UI: Return created batch
+    UI-->>Reviewer: Open live dashboard
+    loop Oldest pending listing first
+        Worker->>DB: Claim listing
+        Worker->>Worker: Retrieve policies and call Gemini
+        Worker->>DB: Save independent result or failure
     end
 ```
 
-One failed AI review does not stop subsequent batch listings. New manual and Excel-imported listings are persisted as `PENDING`, then a backend worker automatically claims and reviews them in creation order. Because the queue state lives in PostgreSQL, processing does not depend on an open browser and pending work resumes after a backend restart. The dashboard polls while any listing is `PENDING` or `REVIEWING`, then stops polling when the queue is settled. Manual retry remains available for failed reviews.
+One failed row does not block the rest, and browser closure does not cancel processing.
 
-The Excel import screen includes a direct download of [`marketplace-sample-listings.xlsx`](frontend/public/samples/marketplace-sample-listings.xlsx). It contains six additional, import-ready rows with all required fields, public image URLs, comma-separated tags, and JSON attributes. These rows are intentionally distinct from the startup demo catalog, so reviewers can download and immediately upload the workbook without duplicate conflicts.
-
-### Finding decisions and finalization
+### Human approval
 
 ```mermaid
 flowchart LR
-    F[Finding] --> A[Approve suggestion]
-    F --> E[Edit then approve]
-    F --> R[Reject finding]
-    A --> D[(Decision history)]
-    E --> D
-    R --> D
-    D --> Q{Every finding has a decision?}
-    Q -->|No| W[Keep finalization disabled]
-    Q -->|Yes| S[Create RevisedListing snapshot]
-    S --> L[Set Review FINALIZED]
-    L --> P[Set Listing APPROVED]
-    P --> H[Append REVIEW_FINALIZED audit event]
+    Finding[AI finding] --> Decision{Reviewer action}
+    Decision --> Approve[Approve wording]
+    Decision --> Edit[Edit wording]
+    Decision --> Reject[Reject suggestion]
+    Approve --> History[(Decision history)]
+    Edit --> History
+    Reject --> History
+    History --> Ready{Every finding decided?}
+    Ready -->|No| Disabled[Finalization disabled]
+    Ready -->|Yes| Snapshot[Create RevisedListing]
+    Snapshot --> Final[Review FINALIZED]
+    Final --> Status[Listing APPROVED]
+    Status --> Audit[Audit event]
 ```
+
+Gemini never overwrites the source. Finalization creates a separate immutable snapshot.
+
+### Status lifecycle
+
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: created or imported
+    PENDING --> REVIEWING: worker claims job
+    REVIEWING --> APPROVED: no findings
+    REVIEWING --> NEEDS_CHANGES: findings saved
+    REVIEWING --> FAILED: provider or parsing failure
+    FAILED --> REVIEWING: manual retry
+    NEEDS_CHANGES --> NEEDS_CHANGES: approve edit reject
+    NEEDS_CHANGES --> APPROVED: finalize
+```
+
+### Deletion
+
+```mermaid
+flowchart TD
+    Delete[Delete listing] --> Confirm{Reviewer confirms?}
+    Confirm -->|No| Keep[Keep listing]
+    Confirm -->|Yes| Active{Currently REVIEWING?}
+    Active -->|Yes| Block[Return 409 and wait]
+    Active -->|No| Tx[Database transaction]
+    Tx --> Cascade[Delete listing and dependent data]
+    Cascade --> Tombstone[Write LISTING_DELETED audit tombstone]
+    Tombstone --> Refresh[Refresh dashboard]
+```
+
+The tombstone also prevents a deleted seeded example from reappearing after restart.
 
 ## Deterministic rules
 
-| Field | Constraint |
+| Field | Rule |
 | --- | --- |
-| Title | Required; 10–150 characters |
-| Description | Required; 30–3,000 characters |
+| Title | Required, 10–150 characters |
+| Description | Required, 30–3,000 characters |
 | Category | One of six supported categories |
-| Price | ₹0.01–₹999,999.99; maximum two decimals |
-| Seller | Required; maximum 120 characters |
-| Tags | Maximum 10; each 2–30 characters |
+| Price | ₹0.01–₹999,999.99, maximum two decimals |
+| Seller | Required, maximum 120 characters |
+| Tags | Maximum 10, each 2–30 characters |
 | Image | Optional HTTP(S) URL or uploaded JPG/PNG/WebP |
 | Batch | 1–20 listings |
 | Duplicate | SHA-256 of normalized seller, category, and title |
 
 Categories: `ELECTRONICS`, `FASHION_APPAREL`, `HOME_KITCHEN`, `HEALTH_WELLNESS`, `COLLECTIBLES_ART`, and `SERVICES`.
 
-## AI workflow and guardrails
+## AI guardrails
 
-The retriever scores universal and category-specific policy sections using category relevance and keyword matches. Only the top relevant sections are sent to Gemini. Gemini runs at temperature `0` and must return a fixed JSON schema containing the affected field, issue type, severity, explanation, supporting evidence, policy code, and optional suggested wording.
+1. Universal and category-specific policies form the candidate set.
+2. Keyword relevance selects only the most applicable policy sections.
+3. Gemini must return the prescribed structured JSON.
+4. Zod rejects malformed responses and invalid enum values.
+5. Every cited `policyCode` must be in the exact context supplied to that request.
+6. The prompt prohibits invented product facts.
+7. Suggested text remains advisory until a human decision is recorded.
 
-Three controls are applied before findings reach the reviewer:
-
-1. Zod rejects malformed responses and unknown enum values.
-2. Citation validation rejects policy codes that were not included in that review's retrieved context.
-3. Human approval prevents AI text from being applied automatically.
-
-The prompt explicitly prohibits invented specifications. Missing information may be flagged as incomplete, but suggested copy cannot manufacture product facts.
+Each finding includes the affected field, issue type, severity, explanation, evidence, policy code, and optional wording. The raw AI output and retrieved policy-code allowlist are retained with the review.
 
 ## Data model
 
 ```mermaid
 erDiagram
-    Batch o|--o{ Listing : groups
+    Batch o|--o{ Listing : contains
     Listing ||--o{ Review : has
     Listing ||--o{ RevisedListing : snapshots
     Listing o|--o{ AuditLog : records
-    Review ||--o{ Finding : returns
+    Review ||--o{ Finding : produces
     Review ||--o{ Decision : receives
     Finding ||--o{ Decision : resolved_by
     Batch {
-      string id PK
-      int totalCount
-      datetime createdAt
+        string id PK
+        int totalCount
+        datetime createdAt
     }
     Listing {
-      string id PK
-      string title
-      string category
-      decimal price
-      json attributes
-      string normalizedKey
-      ListingStatus status
+        string id PK
+        string batchId FK
+        string title
+        string description
+        string category
+        decimal price
+        json attributes
+        string seller
+        string_array tags
+        string normalizedKey
+        ListingStatus status
+        datetime createdAt
+        datetime updatedAt
     }
     Review {
-      string id PK
-      ReviewStatus status
-      string_array retrievedPolicyCodes
-      json aiRawResponse
-      int retryCount
+        string id PK
+        string listingId FK
+        ReviewStatus status
+        boolean deterministicPassed
+        json deterministicErrors
+        string_array retrievedPolicyCodes
+        json aiRawResponse
+        string errorMessage
+        int retryCount
+        datetime createdAt
+        datetime completedAt
     }
     Finding {
-      string id PK
-      string field
-      FindingSeverity severity
-      string policyCode
-      string suggestedWording
+        string id PK
+        string reviewId FK
+        string field
+        string issueType
+        FindingSeverity severity
+        string explanation
+        string supportingEvidence
+        string policyCode
+        string suggestedWording
+        FindingSource source
     }
     Decision {
-      string id PK
-      DecisionAction action
-      string appliedWording
-      string operatorNotes
+        string id PK
+        string reviewId FK
+        string findingId FK
+        DecisionAction action
+        string appliedWording
+        string operatorNotes
+        datetime decidedAt
     }
     RevisedListing {
-      string id PK
-      datetime finalizedAt
+        string id PK
+        string listingId FK
+        string title
+        string description
+        string category
+        decimal price
+        json attributes
+        string seller
+        string_array tags
+        datetime finalizedAt
     }
     AuditLog {
-      string id PK
-      string action
-      json metadata
-      datetime timestamp
+        string id PK
+        string listingId FK
+        string action
+        json metadata
+        datetime timestamp
     }
     PolicySection {
-      string id PK
-      string code UK
-      string category
-      string title
-      string content
-      string_array keywords
-      boolean isActive
+        string id PK
+        string code UK
+        string category
+        string title
+        string content
+        string_array keywords
+        boolean isActive
     }
 ```
 
-`PolicySection` is intentionally not connected by a database foreign key: findings preserve the cited `policyCode`, while each review also stores the exact `retrievedPolicyCodes` supplied to Gemini. The backend verifies that every returned citation belongs to that retrieved set before saving it.
+`PolicySection` deliberately has no foreign key to `Finding`. The backend validates findings against the retrieved code allowlist saved on their review. Images are stored in `attributes.__imageUrl` for this bounded demo; production should use object storage.
 
-Images are compressed in the browser and stored in `attributes.__imageUrl` for this bounded demonstration. Production should use object storage and retain only an asset URL in PostgreSQL.
+## Setup
 
-## Repository structure
+### Prerequisites
 
-```text
-frontend/src/pages/       Dashboard, creation, Excel import, review workbench
-frontend/src/api.ts       API wrapper
-frontend/src/styles.css   Responsive visual system
-backend/src/domain/       Validation, duplicate, policy, and AI schemas
-backend/src/services/     Gemini integration and durable background review worker
-backend/src/app.ts        REST routes and workflow orchestration
-backend/prisma/           Schema, Supabase bootstrap SQL, and seed
-samples/listings.json     Import-ready sample data
+- Node.js 22+
+- Supabase PostgreSQL project
+- Gemini API key
+
+### Install and run
+
+```bash
+npm install
+npm run db:generate -w backend
+npm run dev
 ```
 
-## Local setup
+Before the first run:
 
-1. Copy `backend/.env.example` to `backend/.env` and provide a Supabase PostgreSQL transaction-pooler connection string and Gemini API key. Copy `frontend/.env.example` to `frontend/.env` only when the API is not at `http://localhost:4000/api`.
-2. Install dependencies with `npm install`.
-3. Generate the Prisma client with `npm run db:generate -w backend`.
-4. Open `backend/prisma/init.sql` in Supabase SQL Editor and run it once to create the schema.
-5. Seed policies with `npm run db:seed -w backend`.
-6. Start both applications with `npm run dev`.
+1. Copy `backend/.env.example` to `backend/.env`.
+2. Configure `DATABASE_URL`, `GEMINI_API_KEY`, and `CLIENT_ORIGIN`.
+3. Run `backend/prisma/init.sql` once in Supabase SQL Editor.
+4. Optionally run the idempotent `npm run db:seed -w backend`.
+5. Copy `frontend/.env.example` only if the API is not `http://localhost:4000/api`.
 
-The frontend runs at `http://localhost:5173` and the API at `http://localhost:4000`.
+Local frontend: `http://localhost:5173` · Local API: `http://localhost:4000`.
 
-The seed command is idempotent and also adds six reviewer-friendly sample listings covering compliant content, medical claims, authenticity claims, incomplete services, refurbished electronics, and home goods.
+### Environment variables
 
-### Supabase note
+| Name | Service | Purpose |
+| --- | --- | --- |
+| `DATABASE_URL` | Backend | PostgreSQL connection string |
+| `DATABASE_CA_CERT_PATH` | Backend | Optional CA file path |
+| `GEMINI_API_KEY` | Backend | Server-only Gemini credential |
+| `GEMINI_MODEL` | Backend | Defaults to `gemini-3.5-flash-lite` |
+| `CLIENT_ORIGIN` | Backend | Comma-separated allowed frontend origins |
+| `PORT` | Backend | Defaults to 4000; Render supplies it |
+| `VITE_API_BASE_URL` | Frontend | Hosted API base ending in `/api` |
 
-The transaction pooler uses port `6543`. The backend uses Prisma's PostgreSQL driver adapter with a bounded five-connection `pg` pool, verified TLS, connection keep-alive, and joined relation loading for detail pages. Prisma schema-management commands can still fail through transaction pooling, so the initial schema is supplied as `backend/prisma/init.sql` for the Supabase SQL Editor.
+The app uses Prisma's PostgreSQL adapter, a bounded `pg` pool, keep-alive, and verified TLS. Schema creation uses `backend/prisma/init.sql` because migration commands are unreliable through Supabase transaction pooling. `prisma generate` creates the client, not database tables.
 
-For verified TLS, download the server root certificate from **Supabase → Project Settings → Database → SSL Configuration**, save it as `backend/certs/prod-supabase.crt`, and configure:
+## Excel import
 
-```env
-DATABASE_CA_CERT_PATH=./certs/prod-supabase.crt
-```
-
-The certificate and `backend/.env` are ignored by Git. Never solve certificate errors by disabling TLS verification.
-
-## Core workflow
-
-Listings first pass deterministic checks for required fields, supported categories, price format, length limits, and duplicates. Valid listings are matched to relevant policy sections and reviewed by the AI. Every AI finding must cite a retrieved policy section. Suggestions are proposals only and require explicit reviewer approval, editing, or rejection.
-
-## Excel import format
-
-The first worksheet uses these columns:
+Download [`marketplace-sample-listings.xlsx`](frontend/public/samples/marketplace-sample-listings.xlsx). It contains six records distinct from the ten seeded examples.
 
 | Column | Required | Example |
 | --- | --- | --- |
 | `title` | Yes | `Wireless noise-cancelling headphones` |
-| `description` | Yes | `Over-ear headphones with...` |
+| `description` | Yes | 30–3,000 characters |
 | `category` | Yes | `ELECTRONICS` |
 | `price` | Yes | `12999.00` |
 | `seller` | Yes | `Acme Audio` |
 | `tags` | No | `wireless, audio, travel` |
-| `imageUrl` | No | `https://example.com/item.webp` |
-| `attributes` | No | JSON object or supported key/value text |
+| `imageUrl` | No | Public HTTP(S) image URL |
+| `attributes` | No | `{"condition":"Used"}` |
 
-## API guide
+## API
 
 | Method | Endpoint | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/health` | Database and AI readiness |
-| `GET` | `/api/config` | Supported categories and limits |
-| `GET` | `/api/policies` | Bounded policy catalogue |
+| `GET` | `/api/config` | Categories and limits |
+| `GET` | `/api/policies` | Policy catalogue |
 | `GET` | `/api/listings` | Dashboard collection |
-| `POST` | `/api/listings` | Validate and create one listing |
-| `GET` | `/api/listings/:id` | Listing, reviews, revisions, and history |
-| `POST` | `/api/batches` | Create an Excel-derived batch |
-| `POST` | `/api/listings/:id/review` | Manually run or retry policy retrieval and Gemini review (the worker invokes this automatically for new listings) |
-| `DELETE` | `/api/listings/:id` | Delete a settled listing and its dependent review data while preserving a deletion audit event |
-| `POST` | `/api/reviews/:reviewId/findings/:findingId/decisions` | Approve, edit, or reject a finding |
-| `POST` | `/api/reviews/:reviewId/finalize` | Create an immutable revised snapshot |
+| `POST` | `/api/listings` | Create one pending listing |
+| `GET` | `/api/listings/:id` | Full listing and history |
+| `DELETE` | `/api/listings/:id` | Delete a settled listing with audit tombstone |
+| `POST` | `/api/batches` | Create a validated Excel batch |
+| `POST` | `/api/listings/:id/review` | Worker review or manual retry |
+| `POST` | `/api/reviews/:reviewId/findings/:findingId/decisions` | Approve, edit, or reject |
+| `POST` | `/api/reviews/:reviewId/finalize` | Create revised snapshot |
 
-## Current scope
+Errors contain a stable code, human-readable message, and request ID for log correlation.
 
-- Single listing creation
-- Excel (`.xlsx`/`.xls`) batches of up to 20 listings
-- Optional listing image URL and image previews
-- Indian rupee price formatting
-- Live Pending, Evaluating, Needs Changes, Approved, and Failed status views
-- Deterministic validation
-- Policy retrieval and cited AI review
-- Field-level decisions and revised snapshots
-- Review and approval history
-
-## Submission requirement coverage
-
-| Requirement | Implementation and evidence |
-| --- | --- |
-| Usable frontend | Responsive React workbench with dashboard, manual creation, Excel import, comparison, decisions, and history views |
-| Working backend | Express API with Zod validation, normalized errors, health diagnostics, and bounded workflow endpoints |
-| Basic persistence | PostgreSQL through Prisma stores listings, batches, reviews, findings, decisions, revisions, policies, and audit events |
-| Functional LLM workflow | Policy retrieval feeds Gemini structured context; schema and citation allowlists guard the response |
-| Human approval | Suggestions are never auto-applied; every finding requires approve, edit, or reject before finalization |
-| UI states | Dedicated loading, empty, field-validation, success, provider-failure, database-failure, and retry states |
-| Structured logs | Pino JSON logs include request ID, method, path, workflow event, record identifiers, and failures |
-| Focused tests | Twelve backend tests cover deterministic rules, duplicates, policy ranking, parsing, and citation validation |
-| Documentation | This README, `AGENT_USAGE.md`, scoped environment examples, sample data, diagrams, screenshots, and narrated walkthrough |
-| Deployment | `render.yaml` provisions the API and `frontend/vercel.json` handles SPA routing; live URLs must be recorded below after provider deployment |
-
-## Excluded scope
-
-Publishing, payments, image moderation, seller verification, unrestricted categories, and large-scale batch infrastructure are intentionally excluded.
-
-## Tests
-
-Run all tests with:
-
-```bash
-npm test
-```
-
-Run the full quality gate before deployment:
+## Testing and logs
 
 ```bash
 npm run lint
@@ -442,43 +461,76 @@ npm test
 npm run build
 ```
 
-Tests focus on validation boundaries, duplicate keys, batch duplicates, policy scoring, AI response parsing, and citation verification. With the app running, `GET http://localhost:4000/api/health` should return `database: connected` and `aiConfigured: true`.
+There are **14 passing backend tests** across five files. They cover validation boundaries, normalized and batch duplicates, policy ranking, AI parsing, citation enforcement, CORS, and the image-backed sample catalogue. Frontend verification currently uses TypeScript production builds and browser smoke tests rather than component tests.
+
+Pino events include request metadata, record IDs, AI start/completion/failure, selected policy codes, finding counts, worker dispatch/recovery, decisions, finalization, and deletion.
+
+## Requirement coverage
+
+| Requirement | Evidence |
+| --- | --- |
+| Usable frontend | Responsive dashboard, confirmation modal, Excel import, review decisions, product details, deletion dialog |
+| Working backend | Express, Zod, normalized errors, health diagnostics, guarded transitions |
+| Persistence | PostgreSQL stores listings, batches, reviews, findings, decisions, revisions, policies, audits |
+| Functional LLM workflow | Policy retrieval feeds Gemini; schema and citation allowlists guard output |
+| Human approval | No suggestion is auto-applied; every finding requires a decision |
+| UI states | Loading, empty, validation, queued, evaluating, success, failure, and retry |
+| Background processing | Server worker survives browser closure and recovers stale jobs |
+| Structured logs | Request IDs and workflow events are correlated with stable record IDs |
+| Tests | 14 passing focused tests plus production builds |
+| Documentation | README, AGENT_USAGE, env examples, diagrams, screenshots, workbook, walkthrough |
+| Deployment | Live Vercel frontend, Render API, Supabase database |
 
 ## Deployment
 
-The frontend is configured for Vercel, the Express API for Render, and PostgreSQL for Supabase. `render.yaml` and `frontend/vercel.json` are committed so deployment settings remain reviewable. A repository configuration is not evidence of a live deployment: replace the placeholders below only after both URLs have been opened and the review flow has been exercised.
-
-| Review endpoint | Value |
+| Endpoint | Live value |
 | --- | --- |
-| Frontend URL | `PENDING_PROVIDER_DEPLOYMENT` |
-| API health URL | `PENDING_PROVIDER_DEPLOYMENT/api/health` |
-| Test account | Not required; authentication is intentionally outside this bounded assignment |
-| Sample input | `samples/listings.json` or the idempotent seeded examples |
+| Frontend | [https://aggroso-azure.vercel.app](https://aggroso-azure.vercel.app) |
+| API health | [https://aggroso-pn34.onrender.com/api/health](https://aggroso-pn34.onrender.com/api/health) |
+| Authentication | Not required for this bounded assignment |
 
-### Frontend
+### Vercel
 
-Create a Vercel project with **Root Directory** set to `frontend`. Use `npm run build`, publish `dist`, and set `VITE_API_BASE_URL` to the hosted API URL ending in `/api`. The committed rewrite sends React Router paths back to `index.html`.
+- Root: `frontend`
+- Build: `npm run build`
+- Output: `dist`
+- `VITE_API_BASE_URL=https://aggroso-pn34.onrender.com/api`
+- `frontend/vercel.json` provides SPA rewrites.
 
-### Backend
+### Render
 
-Create the API from the repository's Render Blueprint. It installs dependencies, generates Prisma Client, builds the backend, starts the compiled server, and checks `/api/health`. Configure `DATABASE_URL`, `GEMINI_API_KEY`, and `CLIENT_ORIGIN`; `GEMINI_MODEL` already has a safe default. Set `DATABASE_CA_CERT_PATH` only when the certificate is mounted as a secret file. Never put a credential or certificate in Git.
+- Build: `npm ci --include=dev && npm run build -w backend`
+- Start: `npm run start -w backend`
+- Health: `/api/health`
+- Required: `DATABASE_URL`, `GEMINI_API_KEY`, `CLIENT_ORIGIN`
 
-After Vercel assigns the frontend URL, set Render's `CLIENT_ORIGIN` to that exact origin. After Render assigns the API URL, set Vercel's `VITE_API_BASE_URL` to `<render-url>/api` and redeploy the frontend.
-
-Before submission, verify health, manual creation, Excel import, one successful AI review, all three decision actions, finalization, retry behavior, and page-refresh persistence. Keep the deployment and Gemini quota available until the evaluation is complete, then replace the placeholder URLs in this section and include the same URLs plus `samples/listings.json` in the submission remarks.
+Render's free instance may sleep after inactivity, making the first request slower. Pending work remains durable and resumes when the service runs again.
 
 ## Troubleshooting
 
-- **Dashboard cannot load listings:** call `/api/health`, match its request ID to the backend log, and verify the Supabase URL and certificate path.
-- **`prepared statement already exists`:** use the included PostgreSQL adapter and restart stale backend processes; transaction pooling does not support prepared statements.
-- **Gemini review failed:** verify the API key/model, restart the backend, and retry. Failed attempts remain in history.
-- **Excel import failed:** use `.xlsx`/`.xls`, verify the documented headers, and keep the batch at 20 rows or fewer.
+| Symptom | Resolution |
+| --- | --- |
+| `Failed to fetch` | Check API health, Vercel `VITE_API_BASE_URL`, and Render `CLIENT_ORIGIN` |
+| Missing tables | Run `backend/prisma/init.sql` in Supabase SQL Editor |
+| Prepared statement error | Use the committed driver adapter and transaction-pooler configuration |
+| TLS error | Use the bundled/public CA or valid `DATABASE_CA_CERT_PATH`; never disable verification |
+| Gemini model 404 | Use the configured current model and redeploy the backend |
+| Listing remains Pending | Check worker logs; processing resumes after Render wakes |
+| Excel rejected | Use documented headers, valid JSON attributes, supported categories, maximum 20 rows |
+| Delete disabled | Wait for the active review to finish |
 
-## Security and limitations
+## Limitations and security
 
-- Secrets, database passwords, and certificates must never be committed.
-- The frontend never receives the Gemini key or database password.
-- Images are displayed but not moderated.
-- Retrieval is deterministic category/keyword scoring rather than a vector database.
-- Authentication, marketplace publishing, payments, and seller verification are outside scope.
-- Batch processing is bounded and sequential rather than distributed.
+- Never commit credentials, API keys, database passwords, tokens, or private certificates.
+- Gemini and database credentials exist only on the backend.
+- Images are displayed but not moderated; production should use object storage.
+- Retrieval is category/keyword scoring rather than vector search.
+- The worker is a bounded single process, not a distributed queue.
+- Authentication, multi-tenancy, publishing, payments, and seller verification are outside scope.
+
+## Submission files
+
+- [`AGENT_USAGE.md`](AGENT_USAGE.md) — tools, prompts, mistakes, and verification
+- [`.env.example`](.env.example), [`backend/.env.example`](backend/.env.example), [`frontend/.env.example`](frontend/.env.example) — names only, no secrets
+- [`marketplace-sample-listings.xlsx`](frontend/public/samples/marketplace-sample-listings.xlsx) — import-ready workbook
+- [`samples/listings.json`](samples/listings.json) — JSON fixtures

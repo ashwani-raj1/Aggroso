@@ -20,6 +20,8 @@ No separate coding sub-agents or delegated human contributors were used. The run
 - Retrieve only relevant policy sections and reject every Gemini citation that was not included in the prompt context.
 - Preserve the original listing, AI response, reviewer decisions, revised snapshot, retries, and audit history.
 - Add manual and Excel batch ingestion, Indian-rupee formatting, image preview, clear workflow states, and sample listings.
+- Move Gemini evaluation into a durable backend worker so reviews continue after the browser closes and recover after restarts.
+- Add review-before-submit confirmation, expanded product facts, and audited deletion without recreating deleted demo samples.
 - Diagnose Supabase transaction-pooler prepared-statement failures without disabling transport security.
 - Create focused tests for input boundaries, duplicate detection, policy ranking, structured AI parsing, and citation verification.
 - Document the architecture, ER model, end-to-end workflow, setup, deployment, limitations, and reviewer demo path.
@@ -36,6 +38,8 @@ No separate coding sub-agents or delegated human contributors were used. The run
 | Suggestions could overwrite source content | Applying Gemini rewrites immediately | Preserved original listings and required explicit approve, edit, or reject decisions before finalization |
 | Frontend import/build errors | Leaving packages or Vite environment types implicit | Added workspace dependencies and explicit Vite environment typing, then verified the production build |
 | README Mermaid diagrams failed on GitHub | Keeping syntax accepted only by other Mermaid renderers | Simplified sequence labels and rechecked GitHub-compatible Mermaid source |
+| Pending reviews required an open detail page | Triggering Gemini from a React page effect | Added a PostgreSQL-backed worker and dashboard polling for both queued and evaluating states |
+| Seeded examples could reappear after deletion | Recreating every missing sample on startup | Preserved a deletion tombstone and made sample bootstrap respect it |
 
 ## Runtime AI safety and review boundary
 
@@ -44,10 +48,10 @@ Gemini receives a bounded listing plus selected policy sections. Its response mu
 ## Verification performed
 
 - `npm run lint` for TypeScript validation in both workspaces.
-- `npm test` for deterministic validation, duplicate keys, batch duplicates, policy scoring, AI response parsing, and citation enforcement.
+- `npm test` for 14 passing checks covering deterministic validation, duplicate keys, batch duplicates, policy scoring, AI response parsing, citation enforcement, CORS, and the sample catalogue.
 - `npm run build` for production frontend and backend builds.
 - Full decoding of the README GIF and narrated MP4 walkthrough.
-- Manual checks of listing creation, dashboard states, Excel import, Gemini review, approve/edit/reject actions, finalization, and persisted history.
+- Manual checks of listing confirmation, background processing after navigation, dashboard states, Excel download/import, Gemini review, approve/edit/reject actions, finalization, product facts, deletion, and persisted history.
 - Secret review of tracked configuration: only variable names and placeholders belong in `.env.example`; API keys, passwords, tokens, and certificates are excluded.
 
 ## Known limitations
